@@ -13,3 +13,11 @@
 
 [http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_train_LR_bicubic_X2.zip](http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_train_LR_bicubic_X2.zip)
 [http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_valid_LR_bicubic_X2.zip](http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_valid_LR_bicubic_X2.zip)
+
+To download the dataset, we set up a install and preparation scripts
+
+```
+./src/scripts/download_data.sh && python ./scr/scripts/to_grayscale
+```
+
+
