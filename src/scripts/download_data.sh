@@ -1,8 +1,11 @@
 #!/usr/bin/sh
 
 
-COLORED_TRAIN="../../data/colored/train"
-COLORED_VALID="../../data/colored/valid"
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+ROOT_DIR="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
+DATA_DIR="$ROOT_DIR/data"
+COLORED_TRAIN="$DATA_DIR/colored/train"
+COLORED_VALID="$DATA_DIR/colored/valid"
 
 mkdir -p $COLORED_TRAIN
 mkdir -p $COLORED_VALID
