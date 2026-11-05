@@ -17,7 +17,5 @@
 To download the dataset, we set up a install and preparation scripts
 
 ```
-./src/scripts/download_data.sh && python ./scr/scripts/to_grayscale
+./src/scripts/download_data.sh && python ./src/scripts/to_grayscale.py
 ```
-
-
