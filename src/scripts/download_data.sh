@@ -13,7 +13,7 @@ mv colored_train.zip $COLORED_TRAIN/
 cd $COLORED_TRAIN
 unzip colored_train.zip
 
-mv colored_train/X2/* .
+mv DIV2K_train_LR_bicubic/X2/* .
 rm -rf colored_train
 
 
@@ -23,5 +23,5 @@ mv colored_valid.zip $COLORED_VALID/
 cd $COLORED_VALID
 unzip colored_valid.zip
 
-mv colored_valid/X2/* .
+mv DIV2K_valid_LR_bicubic/X2/* .
 rm -rf colored_valid
