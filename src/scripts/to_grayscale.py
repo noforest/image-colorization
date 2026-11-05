@@ -1,14 +1,19 @@
+from pathlib import Path
 import os 
 from PIL import Image
 import subprocess
 
-subprocess.run(["mkdir", "-p", "../../data/grayscale/train"])
-subprocess.run(["mkdir", "-p", "../../data/grayscale/valid"])
+ROOT_DIR = Path(__file__).resolve().parents[2]  # src/scripts/ -> src/ -> root [EMPLACEMENT DU SCRIPT]
+DATA_DIR = ROOT_DIR / "data"
 
-C_TRAIN_PATH_IMAGES = "../../data/colored/train"
-C_VALID_PATH_IMAGES = "../../data/colored/valid"
-G_TRAIN_PATH_IMAGES = "../../data/grayscale/train"
-G_VALID_PATH_IMAGES = "../../data/grayscale/valid"
+C_TRAIN_PATH_IMAGES = DATA_DIR / "colored" / "train"
+C_VALID_PATH_IMAGES = DATA_DIR / "colored" / "valid"
+G_TRAIN_PATH_IMAGES = DATA_DIR / "grayscale" / "train"
+G_VALID_PATH_IMAGES = DATA_DIR / "grayscale" / "valid"
+
+subprocess.run(["mkdir", "-p", G_TRAIN_PATH_IMAGES])
+subprocess.run(["mkdir", "-p", G_VALID_PATH_IMAGES])
+
 
 def convert_to_grayscale(image_path):
     img = Image.open(image_path)
