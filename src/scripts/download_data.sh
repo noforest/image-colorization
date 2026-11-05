@@ -1,8 +1,8 @@
 #!/usr/bin/sh
 
 
-COLORED_TRAIN="../../dataolored/train"
-COLORED_VALID="../../dataolored/valid"
+COLORED_TRAIN="../../data/colored/train"
+COLORED_VALID="../../data/colored/valid"
 
 mkdir -p $COLORED_TRAIN
 mkdir -p $COLORED_VALID
