@@ -8,3 +8,8 @@
 - colorization à partir de ref (volorimétrie d'un animal sur une voiture par ex) ---- U-net
 - reseau de neuronnes profonds
 
+
+## Dataset
+
+[http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_train_LR_bicubic_X2.zip](http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_train_LR_bicubic_X2.zip)
+[http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_valid_LR_bicubic_X2.zip](http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_valid_LR_bicubic_X2.zip)
