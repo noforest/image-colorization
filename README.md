@@ -8,6 +8,29 @@
 - colorization à partir de ref (volorimétrie d'un animal sur une voiture par ex) ---- U-net
 - reseau de neuronnes profonds
 
+## Pipeline
+
+```
+DIV2K (800 images couleur en train, 100 en validation)
+- passage en Lab : L = entrée, (a, b) = cible
+
+- carrés de 256 × 256 tirés au hasard, retournements (augmentation)
+
+- scribbles simulés: quelques pixels tirés au hasard gardent leur vraie
+  couleur (a, b) /!\ un masque vaut 1 sur ces pixels, 0 ailleurs
+
+- U-Net : entrée 4 canaux = L + (a, b) des scribbles + masque PUIS sortie (a, b)
+
+- perte entre (a, b) prédits et vrais, sur toute l'image
+
+- on recolle L d'origine + (a, b) prédits → conversion en RVB
+
+- évaluation : PSNR, SSIM, LPIPS selon le nombre de scribbles, et regarder
+  les images
+
+A l'inférence : c'est l'utilisateur qui place les points.
+```
+
 
 ## Dataset
 
