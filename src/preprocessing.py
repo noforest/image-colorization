@@ -3,13 +3,18 @@ import torch
 import torchvision.transforms as transforms
 from skimage import io, color
 import numpy as np
+from pathlib import Path
 
 CSTE_MASQUE = 0.01
 
+ROOT_DIR = Path(__file__).resolve().parents[2]  # src/scripts/ -> src/ -> root [EMPLACEMENT DU SCRIPT]
+DATA_DIR = ROOT_DIR / "data"
+C_TRAIN_PATH_IMAGES = DATA_DIR / "colored" / "train"
+C_VALID_PATH_IMAGES = DATA_DIR / "colored" / "valid"
+
 class MyDataset(Dataset):
-    def __init__(self, image_paths, labels, size=(256, 256), n_aug=0):
+    def __init__(self, image_paths, size=(256, 256), n_aug=0):
         self.image_paths = image_paths
-        self.labels = labels
         self.n_aug = n_aug
 
         # NOTE: à revoir valeurs
@@ -70,15 +75,10 @@ class MyDataset(Dataset):
 
 
 
-# all_train = [f"{train_dogs_dir}/{name}" for name in train_dog_fnames] + \
-#         [f"{train_cats_dir}/{name}" for name in train_cat_fnames]
-# all_valid = [f"{valid_dogs_dir}/{name}" for name in valid_dog_fnames] + \
-#         [f"{valid_cats_dir}/{name}" for name in valid_cat_fnames]
+
+
+# train_dataset = MyDataset(os.lsdir(C_TRAIN_PATH_IMAGES))
+# # valid_dataset = MyDataset(all_valid)
 #
-# train_labels = [1] * len(train_dog_fnames) + [0] * len(train_cat_fnames)
-# valid_labels = [1] * len(valid_dog_fnames) + [0] * len(valid_cat_fnames)
-#
-# train_dataset = MyDataset(all_train, train_labels)
-# valid_dataset = MyDataset(all_valid, valid_labels)
 # train_loader = DataLoader(train_dataset, shuffle=True, batch_size=32)
 # valid_loader = DataLoader(valid_dataset, shuffle=False, batch_size=32)

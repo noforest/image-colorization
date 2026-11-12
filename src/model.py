@@ -8,6 +8,9 @@ class UNet(nn.Module):
     - idée: https://miro.medium.com/v2/resize:fit:720/format:webp/1*1wV5-9EVb_3KmNjfuoTqkw.png
     - sortie = (taille - kernel + 2*padding) / stride + 1
         ex pour MaxPool2d(2) : stride par défaut c'est 1
+
+    - cf: https://github.com/uygarkurt/UNet-PyTorch/blob/main/unet.py
+    [essayer de le refaire comme un grand ouaaaaaaai]
     """
     def __init__(self, in_channels=4):
         
