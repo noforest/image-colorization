@@ -31,6 +31,25 @@ DIV2K (800 images couleur en train, 100 en validation)
 A l'inférence : c'est l'utilisateur qui place les points.
 ```
 
+## choix de convertir en lab à la volée
+
+- Même résultat : le recadrage et le retournement donnent la même chose avant
+  ou après la conversion en Lab. Précalculer ne fait donc rien gagner en
+  qualité.
+- Coût négligeable : rgb2lab sur un carré 256×256 prend quelques millisecondes.
+  Avec plusieurs workers dans le DataLoader, c'est caché derrière
+  l'entraînement sur GPU.
+- Moins d'espace disque : le Lab en float32 prend ~7 Go, contre ~1,5 Go pour
+  les PNG d'origine.
+- Une seule source de données : pas de deuxième copie du dataset à régénérer et
+  à garder synchronisée si on change quelque chose.
+- Plus souple : on peut ajouter des augmentations de couleur (luminosité,
+  saturation…), qui se font en RVB, ou changer la normalisation, sans tout
+  recalculer.
+- Même code pour l'entraînement et l'inférence : à l'inférence, l'utilisateur
+  fournit une image RVB, il faut donc de toute façon convertir à la volée.
+- Pipeline plus simple : une étape de préparation en moins, plus facile à
+  expliquer dans le README.
 
 ## Dataset
 
