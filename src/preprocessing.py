@@ -15,8 +15,8 @@ class MyDataset(Dataset):
         # NOTE: à revoir valeurs
 
         normalize = transforms.Normalize(
-                mean=(50.0, 0.0, 0.0, 0.0),
-                std=(50.0, 110.0, 110.0, 1.0),
+                mean=(50.0, 0.0, 0.0),
+                std=(50.0, 110.0, 110.0),
                 )
 
         """
@@ -47,27 +47,26 @@ class MyDataset(Dataset):
         is_aug = index >= n             # originale ou copie augmentée
 
         img = io.imread(self.image_paths[real_index])
-        img_LAB = color.rgb2lab(img)
+        img_LAB = color.rgb2lab(img).astype(np.float32)
         img_LAB = torch.from_numpy(img_LAB).permute(2, 0, 1)   # (3, H, W)
 
 
         transform = self.aug_transform if is_aug else self.base_transform
         img_LAB = transform(img_LAB)
 
-        img_L = img_LAB[:, :, 0] # GRIS / INPUT
-        img_A = img_LAB[:, :, 1] # GROUND TRUTH
-        img_B = img_LAB[:, :, 2] # GROUND TRUTH
+        img_L = img_LAB[0:1] # GRIS / INPUT
+        img_A = img_LAB[1:2] # GROUND TRUTH
+        img_B = img_LAB[2:3] # GROUND TRUTH
 
-        # masque = # 1% des pixels vaut 1 et les autres 0
-        array_random = np.random.random(img_L.shape)            # normalement: (256, 256)
-        masque = np.where(array_random < CSTE_MASQUE, 1, 0)
+        # 1% des pixels à 1, le reste à 0
+        masque = (torch.rand_like(img_L) < CSTE_MASQUE).float() #  normalement shape = (256, 256)
 
         a_hint = img_A * masque
         b_hint = img_B * masque
 
-        input = torch.cat([img_L, a_hint, b_hint, masque], dim=0)
+        x = torch.cat([img_L, a_hint, b_hint, masque], dim=0)
 
-        return input, torch.cat([img_A, img_B], dim=0)
+        return x, torch.cat([img_A, img_B], dim=0)
 
 
 
