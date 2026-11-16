@@ -1,10 +1,12 @@
-from torch._prims_common import Tensor
+import torch
 from pathlib import Path
 import os 
 import subprocess
 import tqdm
 from skimage import io, color
 import numpy as np
+from typing import Any
+from numpy.typing import NDArray
 
 ROOT_DIR = Path(__file__).resolve().parents[2]  # src/scripts/ -> src/ -> root [EMPLACEMENT DU SCRIPT]
 DATA_DIR = ROOT_DIR / "data"
@@ -19,15 +21,15 @@ LAB_VALID_PATH = DATA_DIR / "lab" / "valid"
 subprocess.run(["mkdir", "-p", LAB_TRAIN_PATH])
 subprocess.run(["mkdir", "-p", LAB_VALID_PATH])
 
-def convert_to_lab(image_path):
+def convert_to_lab(image_path) -> NDArray[Any]:
+    """ convertit rgb en lab """
     img = io.imread(image_path)
     lab_img = color.rgb2lab(img).astype(np.float32)
     return lab_img
 
 
-def convert_to_rgb(img_lab):
-    if type(img_lab) == Tensor:
-        img_lab.to_numpy()
+def convert_to_rgb(img_lab: NDArray[Any]):
+    """ convertit lab en rgb """
     lab_img = color.lab2rgb(img_lab)
     return lab_img
 

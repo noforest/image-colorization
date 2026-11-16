@@ -1,3 +1,4 @@
+#%%
 from model import UNet, MODEL_SAVE_PATH
 import torch
 from scripts.show_model import show_image
@@ -14,6 +15,9 @@ if __name__ == "__main__":
     else: # on prend le.pt le + récent
         model.load_state_dict(torch.load(pt_files[-1], map_location=device))
 
+    #%%
     show_image(model, TEMP_IMAGE_VALID, device)
 
 
+
+# %%
