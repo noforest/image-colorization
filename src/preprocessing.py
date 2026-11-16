@@ -7,7 +7,7 @@ from pathlib import Path
 
 CSTE_MASQUE = 0.01
 
-ROOT_DIR = Path(__file__).resolve().parents[2]  # src/scripts/ -> src/ -> root [EMPLACEMENT DU SCRIPT]
+ROOT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT_DIR / "data"
 C_TRAIN_PATH_IMAGES = DATA_DIR / "colored" / "train"
 C_VALID_PATH_IMAGES = DATA_DIR / "colored" / "valid"
@@ -16,6 +16,8 @@ class MyDataset(Dataset):
     def __init__(self, image_paths, size=(256, 256), n_aug=0):
         self.image_paths = image_paths
         self.n_aug = n_aug
+
+        self.path = image_paths
 
         # NOTE: à revoir valeurs
 
