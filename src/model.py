@@ -3,7 +3,7 @@ from unet_pieces import DownConv
 from unet_pieces import DoubleConv
 from torch import optim, nn
 import torch
-from preprocessing import C_TRAIN_PATH_IMAGES, C_VALID_PATH_IMAGES, DATA_DIR
+from preprocessing import C_TRAIN_PATH_IMAGES, C_TEST_PATH_IMAGES, DATA_DIR
 from preprocessing import MyDataset
 from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
@@ -52,11 +52,6 @@ class UNet(nn.Module):
 
 
     def fit(self, device="cuda" if torch.cuda.is_available() else "cpu"):
-        """
-        Split normal à respecter : (train/valid) puis test
-        Notre split à respecter : (train/test) puis valid (mais en réalité le test c'est le valid)
-            car flemasse (pas envie de renommer les var)
-        """
         LEARNING_RATE = 3e-4
         BATCH_SIZE = 32
         EPOCHS = 5
@@ -65,15 +60,15 @@ class UNet(nn.Module):
         generator = torch.Generator().manual_seed(42)
 
         train_dataset = MyDataset(sorted(C_TRAIN_PATH_IMAGES.iterdir()))
-        valid_dataset = MyDataset(sorted(C_VALID_PATH_IMAGES.iterdir()))
+        test_dataset = MyDataset(sorted(C_TEST_PATH_IMAGES.iterdir()))
 
-        train_dataset, test_dataset = random_split(train_dataset, [0.8, 0.2], generator=generator)
+        train_dataset, valid_dataset = random_split(train_dataset, [0.8, 0.2], generator=generator)
 
         train_dataloader = DataLoader(dataset=train_dataset,
                                       batch_size=BATCH_SIZE,
                                       num_workers=4,
                                       shuffle=True)
-        test_dataloader = DataLoader(dataset=test_dataset,
+        valid_dataloader = DataLoader(dataset=valid_dataset,
                                      batch_size=BATCH_SIZE,
                                      num_workers=4,
                                      shuffle=True)
@@ -103,7 +98,7 @@ class UNet(nn.Module):
             self.eval()
             val_running_loss = 0
             with torch.no_grad():
-                for idx, (image, labels) in enumerate(tqdm(test_dataloader)):
+                for idx, (image, labels) in enumerate(tqdm(valid_dataloader)):
                     img = image.to(device)
                     labels = labels.to(device)
 

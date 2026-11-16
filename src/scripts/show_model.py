@@ -22,7 +22,6 @@ def show_image(model, image_path, device):
 
     img_rgb = io.imread(image_path)
 
-
     # 1. Construction entrée sur cpu    (/!\ on peut pas convertir en numpy quand tenseur sur GPU)
     x, _ = MyDataset([image_path])[0]   # [0] important ==> permet d'executer le __getitem__(index) où index vaut donc ici 0
     x_wo_mask = x[:-1]
@@ -36,13 +35,13 @@ def show_image(model, image_path, device):
         y_hat = model(x)                # (B=1, C=2, H, W)
         y_hat = y_hat.squeeze(0)        # (2, H, W)  ==> on enlève cette dim
 
-
     # 3. Concat 2 tenseurs sur CPU + GPU ==> tout mettre sur CPU
     img_L = x[0:1]
     img_pred = torch.cat([img_L, y_hat.cpu()], dim=0)
     img_pred = denormalize_image(img_pred).permute(1, 2, 0).numpy()
     img_pred_rgb = convert_to_rgb(img_pred)
 
+    # 4. Tracer les 3 figures
     fig, axes = plt.subplots(1, 3, figsize=(20, 5))
     titles = [
         f"Image d'origine {img_rgb.shape[:-1]}",

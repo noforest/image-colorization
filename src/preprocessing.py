@@ -1,4 +1,4 @@
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 import torch
 import torchvision.transforms as transforms
 from skimage import io, color
@@ -10,7 +10,7 @@ CSTE_MASQUE = 0.01
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT_DIR / "data"
 C_TRAIN_PATH_IMAGES = DATA_DIR / "colored" / "train"
-C_VALID_PATH_IMAGES = DATA_DIR / "colored" / "valid"
+C_TEST_PATH_IMAGES = DATA_DIR / "colored" / "test"
 
 class MyDataset(Dataset):
     def __init__(self, image_paths, size=(256, 256), n_aug=0):

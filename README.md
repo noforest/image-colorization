@@ -5,7 +5,7 @@
 
 ## TODO
 - [x] show_image
-- [ ] refaire proprement les bons noms (train / valid) puis test
+- [x] refaire proprement les bons noms (train / valid) puis test
 - [ ] re ranger proprement les fichiers
 - [ ] entrainement avec bcp plus d'EPOCHS (100 ?) car sinon 800 * 0.8 = 640 images en training (640 / 32 batchs = 20 pas par epochs) si on fait que 5 epochs c'est que 100 pas
 - [ ] Dans base.transforms ==> mettre transforms.RandomCrop(256) ==> patch de 256 de l'image (chaque pas voit des patchs différents + image pas écrasée)
@@ -13,6 +13,8 @@
 - [x] Ajout batchNorm2d pour accélérer la convergence du UNet
 - [ ] densité de hints variable à l'entraînement (sinon modèle voit que du 1% et sera perdu)
 - [ ] créer une fonction normalize et déplacer la fonction denormalize dans MyDataset
+- [x] Mettre des num_workers dans les DataLoaders
+- [x] factoriser show_image avec MyDataset
 
 # autres approches
 - scribbles 
