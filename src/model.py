@@ -1,7 +1,9 @@
+from unet_pieces import UpConv
+from unet_pieces import DownConv
+from unet_pieces import DoubleConv
 import torch
 import torch.nn as nn
 
-from unet_pieces import DoubleConv, Encoder, Decoder
 
 class UNet(nn.Module):
     """
@@ -15,37 +17,27 @@ class UNet(nn.Module):
     """
     def __init__(self, in_channels=4):
 
-        self.encoder = nn.Sequential(
-                Encoder(in_channels, 64)
-                # nn.Conv2d(in_channels, out_channels=64, kernel_size=3, padding=1), # (B, 4, 256, 256) -> (B, 64, 256, 256)
-                # nn.BatchNorm2d(64),
-                nn.ReLU(),
-                nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=1), # (B, 64, 256, 256)
-                nn.BatchNorm2d(64),
-                nn.ReLU(),
-                nn.MaxPool2d(kernel_size=2), # (B, 64, 128, 128)
+        self.downconv1 = DownConv(in_channels, 64)
+        self.downconv2 = DownConv(64, 128)
+        self.downconv3 = DownConv(128, 256)
 
-                nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding=1), # (B, 128, 128, 128)
-                nn.BatchNorm2d(128),
-                nn.ReLU(),
-                nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1), # (B, 128, 128, 128)
-                nn.BatchNorm2d(128),
-                nn.ReLU(),
-                nn.MaxPool2d(kernel_size=2), # (B, 128, 64, 64)
+        self.bottle_neck = DoubleConv(256, 512)
 
-                nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding=1), # (B, 256, 64, 64)
-                nn.BatchNorm2d(256),
-                nn.ReLU(),
-                nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1), # (B, 256, 64, 64)
-                nn.BatchNorm2d(256),
-                nn.ReLU(),
-                nn.MaxPool2d(kernel_size=2), # (B, 256, 32, 32)
+        self.upconv3 = UpConv(512, 256)
+        self.upconv2 = UpConv(256, 128)
+        self.upconv1 = UpConv(128, 64)
 
-                nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, padding=1), # (B, 512, 32, 32)
-                nn.BatchNorm2d(512),
-                nn.ReLU(),
-        )
+        self.out = nn.Conv2d(64, out_channels=2, kernel_size=3) # nb de classes = 2 ==> couleurs a, b
 
-        self.decoder = nn.Sequential(
-                nn.ConvTranspose2d(512, 256)
-        )
+    def forward(self, x):
+        down1, p1 = self.downconv1(x)
+        down2, p2 = self.downconv2(p1)
+        down3, p3 = self.downconv3(p2)
+
+        b = self.bottle_neck(p3)
+
+        up3 = self.upconv3(b, down3)
+        up2 = self.upconv2(up3, down2)
+        up1 = self.upconv1(up2, down1)
+
+        return self.out(up1)

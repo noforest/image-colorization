@@ -15,7 +15,7 @@ class DoubleConv(nn.Module):
         return self.conv_op(x)
 
 
-class Encoder(nn.Module):
+class DownConv(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         self.conv = DoubleConv(in_channels, out_channels)
@@ -25,10 +25,10 @@ class Encoder(nn.Module):
         down = self.conv(x)
         p = self.pool(down)
 
-        return down, p
+        return down, p  # down permet de garder la conv pour la skip connexion
 
 
-class Decoder(nn.Module):
+class UpConv(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         self.up = nn.ConvTranspose2d(in_channels, in_channels//2, kernel_size=2, stride=2)
@@ -36,5 +36,5 @@ class Decoder(nn.Module):
 
     def forward(self, x1, x2):
        x1 = self.up(x1)
-       x = torch.cat([x1, x2], 1)
+       x = torch.cat([x1, x2], 1) # NOTE : /!\ on colle la conv du down par la droite, vaut-il mieux que ce soit par la gauche ??
        return self.conv(x)
