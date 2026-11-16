@@ -43,9 +43,6 @@ class UNet(nn.Module):
         down3, p3 = self.downconv3(p2)
 
         b = self.bottle_neck(p3)
-        print(f"down3 {down3.shape}")
-        print(f"p3 {p3.shape}")
-        print(f"b {b.shape}")
         up3 = self.upconv3(b, down3)
         up2 = self.upconv2(up3, down2)
         up1 = self.upconv1(up2, down1)

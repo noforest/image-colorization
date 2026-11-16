@@ -6,8 +6,10 @@ class DoubleConv(nn.Module):
         super().__init__()
         self.conv_op = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
             nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True)
         )
 
@@ -36,6 +38,5 @@ class UpConv(nn.Module):
 
     def forward(self, x1, x2):
        x1 = self.up(x1)
-       print(f"x1 : {x1.shape}")
        x = torch.cat([x1, x2], 1) # NOTE : /!\ on colle la conv du down par la droite, vaut-il mieux que ce soit par la gauche ??
        return self.conv(x)

@@ -1,7 +1,17 @@
 - [x] transformer les images en couleurs en niveau de gris (gratuit) --> pour données d'entrainement --> utiliser div2k
-- [ ] pour le scribbles: laisser 1% de couleur dans les images grises pour prédire le reste. (couleurs réelles) (pour entrainement)
+- [x] pour le scribbles: laisser 1% de couleur dans les images grises pour prédire le reste. (couleurs réelles) (pour entrainement)
 - [ ] à l'inférence c'est l'utilisateur qui donne les couleurs
 - [ ] metrics psnr, signature noise metric
+
+## TODO
+- [x] show_image
+- [ ] refaire proprement les bons noms (train / valid) puis test
+- [ ] re ranger proprement les fichiers
+- [ ] entrainement avec bcp plus d'EPOCHS (100 ?) car sinon 800 * 0.8 = 640 images en training (640 / 32 batchs = 20 pas par epochs) si on fait que 5 epochs c'est que 100 pas
+- [ ] Dans base.transforms ==> mettre transforms.RandomCrop(256) ==> patch de 256 de l'image (chaque pas voit des patchs différents + image pas écrasée)
+- [ ] MSELoss donne des couleurs saturées, utiliser nn.L1Loss ou nn.SmoothL1Loss
+- [x] Ajout batchNorm2d pour accélérer la convergence du UNet
+- [ ] densité de hints variable à l'entraînement (sinon modèle voit que du 1% et sera perdu)
 
 # autres approches
 - scribbles 
