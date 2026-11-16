@@ -19,7 +19,8 @@
 - [ ] Dans MyDataset, un paramètre de mode :
     - [ ] train: RandomCrop + augmentations + Normalize + hints aléatoires (densité variable)
     - [ ] valid : CenterCrop 256 (ou image entière), pas d'augmentation, Normalize + hints aléatoires
-    - [ ] test : image entière recadrée au multiple de 8, pas d'augmentation, Normalize + hints tirés avec une graine fixe (pour PSNR / SSIM reproductibles)
+    - [ ] test : image entière + pad pour être un multiple de 8, pas d'augmentation, Normalize + hints tirés avec une graine fixe (pour PSNR / SSIM reproductibles)
+    (multiple de 8 car on fait 3 maxpool -- on a divisé l'image par 2, 3 fois donc 2^3=8)
 
 # autres approches
 - scribbles 

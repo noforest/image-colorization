@@ -14,10 +14,10 @@ C_TEST_PATH_IMAGES = DATA_DIR / "colored" / "test"
 SIZE_CROP = 256
 
 class MyDataset(Dataset):
-    def __init__(self, image_paths, n_aug=0):
+    def __init__(self, image_paths, split="train", n_aug=0):
         self.image_paths = image_paths
         self.n_aug = n_aug
-
+        self.split = split
         self.path = image_paths
 
         # NOTE: à revoir valeurs
@@ -33,19 +33,37 @@ class MyDataset(Dataset):
         mask unchanged
         """
 
-        self.base_transform = transforms.Compose([
-            # transforms.Resize(size),
-            transforms.RandomCrop(SIZE_CROP),
-            normalize,
-            ])
+        if split == "train":
+            self.base_transform = transforms.Compose([
+                transforms.RandomCrop(SIZE_CROP),
+                normalize,
+                ])
 
 
-        self.aug_transform = transforms.Compose([
-            transforms.RandomCrop(SIZE_CROP),
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomRotation(15),
-            normalize,
-            ])
+            self.aug_transform = transforms.Compose([
+                transforms.RandomCrop(SIZE_CROP),
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomRotation(15),
+                normalize,
+                ])
+
+        elif split == "valid":
+            self.base_transform = transforms.Compose([
+                transforms.CenterCrop(SIZE_CROP),
+                normalize,
+                ])
+            
+            self.aug_transform = None
+
+        else:
+            self.base_transform = transforms.Compose([
+                # faire un PadToMultiple(8)
+                normalize,
+                ])
+
+            self.aug_transform = None
+
+
 
     def __len__(self):
         return len(self.image_paths) * (1 + self.n_aug)
@@ -60,7 +78,7 @@ class MyDataset(Dataset):
         img_LAB = torch.from_numpy(img_LAB).permute(2, 0, 1)   # (3, H, W)
 
 
-        transform = self.aug_transform if is_aug else self.base_transform
+        transform = self.aug_transform if (is_aug and self.split == "train") else self.base_transform
         img_LAB = transform(img_LAB)
 
         img_L = img_LAB[0:1] # GRIS / INPUT
