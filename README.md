@@ -8,13 +8,18 @@
 - [x] refaire proprement les bons noms (train / valid) puis test
 - [ ] re ranger proprement les fichiers
 - [ ] entrainement avec bcp plus d'EPOCHS (100 ?) car sinon 800 * 0.8 = 640 images en training (640 / 32 batchs = 20 pas par epochs) si on fait que 5 epochs c'est que 100 pas
-- [ ] Dans base.transforms ==> mettre transforms.RandomCrop(256) ==> patch de 256 de l'image (chaque pas voit des patchs différents + image pas écrasée)
-- [ ] MSELoss donne des couleurs saturées, utiliser nn.L1Loss ou nn.SmoothL1Loss
+- [ ] Dans base.transforms ==> mettre transforms.RandomCrop(256) ==> patch de 256 de l'image 
+      (chaque pas voit des patchs différents (donc bcp + de données) + image pas écrasée + détails conservés)
+- [x] MSELoss donne des couleurs saturées, utiliser nn.L1Loss ou nn.SmoothL1Loss
 - [x] Ajout batchNorm2d pour accélérer la convergence du UNet
 - [ ] densité de hints variable à l'entraînement (sinon modèle voit que du 1% et sera perdu)
 - [ ] créer une fonction normalize et déplacer la fonction denormalize dans MyDataset
 - [x] Mettre des num_workers dans les DataLoaders
 - [x] factoriser show_image avec MyDataset
+- [ ] Dans MyDataset, un paramètre de mode :
+    - [ ] train: RandomCrop + augmentations + Normalize + hints aléatoires (densité variable)
+    - [ ] valid : CenterCrop 256 (ou image entière), pas d'augmentation, Normalize + hints aléatoires
+    - [ ] test : image entière recadrée au multiple de 8, pas d'augmentation, Normalize + hints tirés avec une graine fixe (pour PSNR / SSIM reproductibles)
 
 # autres approches
 - scribbles 

@@ -1,4 +1,4 @@
-from src.preprocessing import MyDataset
+from preprocessing import MyDataset
 from scripts.to_lab import convert_to_rgb
 import torch
 from skimage import io
@@ -24,6 +24,7 @@ def show_image(model, image_path, device):
 
     # 1. Construction entrée sur cpu    (/!\ on peut pas convertir en numpy quand tenseur sur GPU)
     x, _ = MyDataset([image_path])[0]   # [0] important ==> permet d'executer le __getitem__(index) où index vaut donc ici 0
+    img_L = x[0:1]                      # à garder pour le concat plus tard
     x_wo_mask = x[:-1]
     x_wo_mask = denormalize_image(x_wo_mask).permute(1, 2, 0).numpy() # on permute car dans numpy ça doit être de la forme (H, W, channel_axis)
     x_wo_mask_rgb = convert_to_rgb(x_wo_mask)
@@ -36,7 +37,6 @@ def show_image(model, image_path, device):
         y_hat = y_hat.squeeze(0)        # (2, H, W)  ==> on enlève cette dim
 
     # 3. Concat 2 tenseurs sur CPU + GPU ==> tout mettre sur CPU
-    img_L = x[0:1]
     img_pred = torch.cat([img_L, y_hat.cpu()], dim=0)
     img_pred = denormalize_image(img_pred).permute(1, 2, 0).numpy()
     img_pred_rgb = convert_to_rgb(img_pred)

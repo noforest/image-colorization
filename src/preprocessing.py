@@ -11,9 +11,10 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT_DIR / "data"
 C_TRAIN_PATH_IMAGES = DATA_DIR / "colored" / "train"
 C_TEST_PATH_IMAGES = DATA_DIR / "colored" / "test"
+SIZE_CROP = 256
 
 class MyDataset(Dataset):
-    def __init__(self, image_paths, size=(256, 256), n_aug=0):
+    def __init__(self, image_paths, n_aug=0):
         self.image_paths = image_paths
         self.n_aug = n_aug
 
@@ -33,13 +34,14 @@ class MyDataset(Dataset):
         """
 
         self.base_transform = transforms.Compose([
-            transforms.Resize(size),
+            # transforms.Resize(size),
+            transforms.RandomCrop(SIZE_CROP),
             normalize,
             ])
 
 
         self.aug_transform = transforms.Compose([
-            transforms.RandomResizedCrop(size, scale=(0.8, 1.0)),
+            transforms.RandomCrop(SIZE_CROP),
             transforms.RandomHorizontalFlip(),
             transforms.RandomRotation(15),
             normalize,
