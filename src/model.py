@@ -74,7 +74,7 @@ class UNet(nn.Module):
                                      shuffle=True)
 
         optimizer = optim.AdamW(self.parameters(), lr=LEARNING_RATE)
-        criterion = nn.MSELoss()
+        criterion = nn.L1Loss()
 
         for epoch in range(EPOCHS):
             self.train()
