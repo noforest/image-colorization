@@ -1,28 +1,8 @@
-from scripts.to_lab import convert_to_lab, convert_to_rgb
+from src.preprocessing import MyDataset
+from scripts.to_lab import convert_to_rgb
 import torch
-from preprocessing import CSTE_MASQUE
 from skimage import io
 import matplotlib.pyplot as plt
-import torchvision.transforms as transforms
-
-def normalize_image(img_tensor: torch.Tensor, size=(256, 256)):
-
-    """ 
-    L  = lab[0:1] / 50.0 - 1.0   # [0,100] -> [-1,1]
-    ab = lab[1:3] / 110.0        # ~[-1,1], 0 reste 0
-    """
-
-    normalize = transforms.Normalize(
-            mean=(50.0, 0.0, 0.0),
-            std=(50.0, 110.0, 110.0),
-            )
-
-    transformation = transforms.Compose([
-        transforms.Resize(size),
-        normalize,
-        ])
-
-    return transformation(img_tensor)
 
 def denormalize_image(img_tensor: torch.Tensor) -> torch.Tensor:
 
@@ -38,25 +18,13 @@ def denormalize_image(img_tensor: torch.Tensor) -> torch.Tensor:
     return torch.cat([img_L, img_ab], dim=0)
 
 
-
 def show_image(model, image_path, device):
 
     img_rgb = io.imread(image_path)
 
-    img_LAB = convert_to_lab(image_path)
-    img_LAB = torch.from_numpy(img_LAB).permute(2, 0, 1)   # (C=3, H, W)
-    img_LAB = normalize_image(img_LAB, size=(256, 256))
-
-    img_L = img_LAB[0:1] # GRIS / INPUT
-    img_A = img_LAB[1:2] # GROUND TRUTH
-    img_B = img_LAB[2:3] # GROUND TRUTH
-
-    masque = (torch.rand_like(img_L) < CSTE_MASQUE).float()
-    a_hint = img_A * masque
-    b_hint = img_B * masque
 
     # 1. Construction entrée sur cpu    (/!\ on peut pas convertir en numpy quand tenseur sur GPU)
-    x = torch.cat([img_L, a_hint, b_hint, masque], dim=0)
+    x, _ = MyDataset([image_path])[0]   # [0] important ==> permet d'executer le __getitem__(index) où index vaut donc ici 0
     x_wo_mask = x[:-1]
     x_wo_mask = denormalize_image(x_wo_mask).permute(1, 2, 0).numpy() # on permute car dans numpy ça doit être de la forme (H, W, channel_axis)
     x_wo_mask_rgb = convert_to_rgb(x_wo_mask)
@@ -70,6 +38,7 @@ def show_image(model, image_path, device):
 
 
     # 3. Concat 2 tenseurs sur CPU + GPU ==> tout mettre sur CPU
+    img_L = x[0:1]
     img_pred = torch.cat([img_L, y_hat.cpu()], dim=0)
     img_pred = denormalize_image(img_pred).permute(1, 2, 0).numpy()
     img_pred_rgb = convert_to_rgb(img_pred)

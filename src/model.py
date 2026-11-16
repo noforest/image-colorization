@@ -71,9 +71,11 @@ class UNet(nn.Module):
 
         train_dataloader = DataLoader(dataset=train_dataset,
                                       batch_size=BATCH_SIZE,
+                                      num_workers=4,
                                       shuffle=True)
         test_dataloader = DataLoader(dataset=test_dataset,
                                      batch_size=BATCH_SIZE,
+                                     num_workers=4,
                                      shuffle=True)
 
         optimizer = optim.AdamW(self.parameters(), lr=LEARNING_RATE)

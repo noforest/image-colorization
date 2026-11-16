@@ -12,6 +12,7 @@
 - [ ] MSELoss donne des couleurs saturées, utiliser nn.L1Loss ou nn.SmoothL1Loss
 - [x] Ajout batchNorm2d pour accélérer la convergence du UNet
 - [ ] densité de hints variable à l'entraînement (sinon modèle voit que du 1% et sera perdu)
+- [ ] créer une fonction normalize et déplacer la fonction denormalize dans MyDataset
 
 # autres approches
 - scribbles 
