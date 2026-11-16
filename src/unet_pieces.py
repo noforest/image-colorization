@@ -36,5 +36,6 @@ class UpConv(nn.Module):
 
     def forward(self, x1, x2):
        x1 = self.up(x1)
+       print(f"x1 : {x1.shape}")
        x = torch.cat([x1, x2], 1) # NOTE : /!\ on colle la conv du down par la droite, vaut-il mieux que ce soit par la gauche ??
        return self.conv(x)

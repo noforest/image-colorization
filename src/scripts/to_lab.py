@@ -1,3 +1,4 @@
+from torch._prims_common import Tensor
 from pathlib import Path
 import os 
 import subprocess
@@ -23,6 +24,12 @@ def convert_to_lab(image_path):
     lab_img = color.rgb2lab(img).astype(np.float32)
     return lab_img
 
+
+def convert_to_rgb(img_lab):
+    if type(img_lab) == Tensor:
+        img_lab.to_numpy()
+    lab_img = color.lab2rgb(img_lab)
+    return lab_img
 
 def save_lab(lab_img, filename, train=True):
     name = Path(filename).stem + ".npy"
