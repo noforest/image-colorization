@@ -6,6 +6,7 @@ from model import UNet, MODEL_SAVE_PATH
 import torch
 from scripts.show_model import show_image
 import sys
+from utils import seed_everything
 
 if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -20,6 +21,7 @@ if __name__ == "__main__":
         args, _ = parser.parse_known_args()
 
 
+    seed_everything()
 
     model = UNet(in_channels=4).to(device)
     if args.retrain:

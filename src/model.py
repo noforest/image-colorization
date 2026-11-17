@@ -11,6 +11,7 @@ from tqdm import tqdm
 import os
 from datetime import datetime
 import numpy as np
+from utils import SEED
 
 MODEL_SAVE_PATH = DATA_DIR / "model_weights"
 
@@ -58,15 +59,14 @@ class UNet(nn.Module):
         EPOCHS = 2
         MODEL_SAVE_PATH.mkdir(exist_ok=True)
 
-        generator = torch.Generator().manual_seed(42)
-        rng = np.random.default_rng(42)
+        rng = np.random.default_rng(SEED)
 
         train_paths = np.asarray(sorted(C_TRAIN_PATH_IMAGES.iterdir()))
         idx_shuffle = rng.permutation(len(train_paths))
         eighty = int(len(train_paths) * 0.8)
 
-        valid_paths = train_paths[idx_shuffle][:eighty]
-        train_paths = train_paths[idx_shuffle][eighty:]
+        valid_paths = train_paths[idx_shuffle][eighty:]
+        train_paths = train_paths[idx_shuffle][:eighty]
 
         train_dataset = MyDataset(train_paths, split="train", n_aug=1)
         valid_dataset = MyDataset(valid_paths, split="valid", n_aug=0)
