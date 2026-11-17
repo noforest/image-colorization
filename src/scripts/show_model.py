@@ -5,15 +5,17 @@ from skimage import io
 import matplotlib.pyplot as plt
 import torchvision.transforms.functional as F
 
-def denormalize_test_image(img_tensor: torch.Tensor, original_size) -> torch.Tensor:
+def denormalize_test_image(img_tensor: torch.Tensor, shape_original) -> torch.Tensor:
 
     """ 
     L  = (lab[0:1] + 1.0) * 50.0  # [0,100] <- [-1,1]
     ab = lab[1:3] * 110.0         
+
+    shape_original est tirée d'un NDArray donc de la forme (H, W, ..)
     """
 
     h, w = img_tensor.shape[-2], img_tensor.shape[-1]   # shape de l'image selon un multiple m
-    pad_h, pad_w = h - original_size[0], w - original_size[1]
+    pad_h, pad_w = h - shape_original[0], w - shape_original[1] 
     img_tensor = F.crop(img_tensor, 0, 0, h-pad_h, w-pad_w)
 
     img_L = (img_tensor[0:1] + 1.0) * 50.0
@@ -30,7 +32,7 @@ def show_image(model, image_path, device):
     x, _ = MyDataset([image_path], split="test")[0]   # [0] important ==> permet d'executer le __getitem__(index) où index vaut donc ici 0
     img_L = x[0:1]                      # à garder pour le concat plus tard
     x_wo_mask = x[:-1]
-    x_wo_mask = denormalize_test_image(x_wo_mask, 8).permute(1, 2, 0).numpy() # on permute car dans numpy ça doit être de la forme (H, W, channel_axis)
+    x_wo_mask = denormalize_test_image(x_wo_mask, img_rgb.shape).permute(1, 2, 0).numpy() # on permute car dans numpy ça doit être de la forme (H, W, channel_axis)
     x_wo_mask_rgb = convert_to_rgb(x_wo_mask)
 
     # 2. Puis envoie de l'entrée sur GPU
@@ -42,7 +44,7 @@ def show_image(model, image_path, device):
 
     # 3. Concat 2 tenseurs sur CPU + GPU ==> tout mettre sur CPU
     img_pred = torch.cat([img_L, y_hat.cpu()], dim=0)
-    img_pred = denormalize_test_image(img_pred, 8).permute(1, 2, 0).numpy()
+    img_pred = denormalize_test_image(img_pred, img_rgb.shape).permute(1, 2, 0).numpy()
     img_pred_rgb = convert_to_rgb(img_pred)
 
     # 4. Tracer les 3 figures

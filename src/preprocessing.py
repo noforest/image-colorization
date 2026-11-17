@@ -1,3 +1,4 @@
+from torchvision.transforms import InterpolationMode
 from torch.utils.data import Dataset
 import torch
 import torchvision.transforms as transforms
@@ -13,6 +14,7 @@ DATA_DIR = ROOT_DIR / "data"
 C_TRAIN_PATH_IMAGES = DATA_DIR / "colored" / "train"
 C_TEST_PATH_IMAGES = DATA_DIR / "colored" / "test"
 SIZE_CROP = 256
+SIZE_CROP_ROT = 320
 
 class PadToMultiple(transforms.Pad):
     def __init__(self, m=8, fill=0, padding_mode="reflect"):
@@ -72,9 +74,10 @@ class MyDataset(Dataset):
 
 
             self.aug_transform = transforms.Compose([
-                transforms.RandomRotation(15),  # avant pour éviter les triangles noirs
-                transforms.RandomCrop(SIZE_CROP),
+                transforms.RandomCrop(SIZE_CROP_ROT),       # prend un crop plus grand exprès
                 transforms.RandomHorizontalFlip(),
+                transforms.RandomRotation(15, interpolation=InterpolationMode.BILINEAR), # la rotation va faire des triangles noirs
+                transforms.CenterCrop(SIZE_CROP),           # prendre le crop centré sans les traingles noirs
                 normalize,
                 ])
 
