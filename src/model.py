@@ -127,7 +127,7 @@ class UNet(nn.Module):
             else:
                 wait += 1
                 if wait >= patience:
-                    print(f"EARLY STOPPING : meilleure EPOCH = {epoch-patience}"
+                    print(f"EARLY STOPPING : meilleure EPOCH = {epoch+1-patience}"
                           f"val loss = {best_valid_loss}")
                     break
 

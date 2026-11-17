@@ -70,6 +70,15 @@ A l'inférence : c'est l'utilisateur qui place les points.
 - Pipeline plus simple : une étape de préparation en moins, plus facile à
   expliquer dans le README.
 
+
+## Historique des poids
+- `model20261117-1613.pt` : Premier modèle avec des résultats convaincants
+  - commit `50b473bfc05184ce04456ca13f3aada283cc8a1f`
+  - lr 3e-4 (AdamW), batch 32, 20 epochs max, patience 3, loss L1
+  - crop 256, `n_aug=0`, masque 1 %, split 80/20 seed 42
+  - meilleure epoch 12/15, val loss 0.0524
+  - seul le split est seedé : réentraîner donne des poids proches, pas identiques
+
 ## Dataset
 
 [http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_train_LR_bicubic_X2.zip](http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_train_LR_bicubic_X2.zip)
