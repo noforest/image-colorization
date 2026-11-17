@@ -10,6 +10,7 @@ from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 import os
 from datetime import datetime
+import numpy as np
 
 MODEL_SAVE_PATH = DATA_DIR / "model_weights"
 
@@ -54,15 +55,21 @@ class UNet(nn.Module):
     def fit(self, device="cuda" if torch.cuda.is_available() else "cpu", patience=3):
         LEARNING_RATE = 3e-4
         BATCH_SIZE = 32
-        EPOCHS = 20
+        EPOCHS = 2
         MODEL_SAVE_PATH.mkdir(exist_ok=True)
 
         generator = torch.Generator().manual_seed(42)
+        rng = np.random.default_rng(42)
 
-        train_dataset = MyDataset(sorted(C_TRAIN_PATH_IMAGES.iterdir()), split="train", n_aug=1)
-        # test_dataset = MyDataset(sorted(C_TEST_PATH_IMAGES.iterdir()))
+        train_paths = np.asarray(sorted(C_TRAIN_PATH_IMAGES.iterdir()))
+        idx_shuffle = rng.permutation(len(train_paths))
+        eighty = int(len(train_paths) * 0.8)
 
-        train_dataset, valid_dataset = random_split(train_dataset, [0.8, 0.2], generator=generator)
+        valid_paths = train_paths[idx_shuffle][:eighty]
+        train_paths = train_paths[idx_shuffle][eighty:]
+
+        train_dataset = MyDataset(train_paths, split="train", n_aug=1)
+        valid_dataset = MyDataset(valid_paths, split="valid", n_aug=0)
 
         train_dataloader = DataLoader(dataset=train_dataset,
                                       batch_size=BATCH_SIZE,
