@@ -3,7 +3,7 @@ from model import UNet, MODEL_SAVE_PATH
 import torch
 from scripts.show_model import show_image
 
-TEMP_IMAGE_TEST = "/home/nforest001/sync-enseirb/s9/computer_vision/projet/free-computer-vision-projet/data/colored/test/0850x2.png"
+TEMP_IMAGE_TEST = "/home/nforest001/sync-enseirb/s9/computer_vision/projet/free-computer-vision-projet/data/colored/test/0851x2.png"
 if __name__ == "__main__":
 
     device = "cuda" if torch.cuda.is_available() else "cpu"

@@ -1,3 +1,4 @@
+import copy
 from unet_pieces import UpConv
 from unet_pieces import DownConv
 from unet_pieces import DoubleConv
@@ -51,10 +52,10 @@ class UNet(nn.Module):
 
 
 
-    def fit(self, device="cuda" if torch.cuda.is_available() else "cpu"):
+    def fit(self, device="cuda" if torch.cuda.is_available() else "cpu", patience=3):
         LEARNING_RATE = 3e-4
         BATCH_SIZE = 32
-        EPOCHS = 5
+        EPOCHS = 20
         MODEL_SAVE_PATH.mkdir(exist_ok=True)
 
         generator = torch.Generator().manual_seed(42)
@@ -75,6 +76,10 @@ class UNet(nn.Module):
 
         optimizer = optim.AdamW(self.parameters(), lr=LEARNING_RATE)
         criterion = nn.L1Loss()
+
+        best_valid_loss = float("inf")
+        best_state = None
+        wait = 0
 
         for epoch in range(EPOCHS):
             self.train()
@@ -114,4 +119,19 @@ class UNet(nn.Module):
             print(f"Valid Loss EPOCH {epoch+1}: {val_loss:.4f}")
             print("-"*30)
 
-        torch.save(self.state_dict(), MODEL_SAVE_PATH / f"model{datetime.now().strftime("%Y%m%d-%H%M")}.pt")
+            if val_loss < best_valid_loss:
+                best_valid_loss = val_loss
+                wait = 0
+                best_state = copy.deepcopy(self.state_dict())
+
+            else:
+                wait += 1
+                if wait >= patience:
+                    print(f"EARLY STOPPING : meilleure EPOCH = {epoch-patience}"
+                          f"val loss = {best_valid_loss}")
+                    break
+
+        self.load_state_dict(best_state)
+        
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M")
+        torch.save(self.state_dict(), MODEL_SAVE_PATH / f"model{timestamp}.pt")

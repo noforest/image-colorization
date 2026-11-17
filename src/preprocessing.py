@@ -120,7 +120,7 @@ class MyDataset(Dataset):
         img_B = img_LAB[2:3] # GROUND TRUTH
 
         # 1% des pixels à 1, le reste à 0
-        masque = (torch.rand_like(img_L) < CSTE_MASQUE).float() #  normalement shape = (256, 256)
+        masque = (torch.rand_like(img_L) < CSTE_MASQUE).float()
 
         a_hint = img_A * masque
         b_hint = img_B * masque

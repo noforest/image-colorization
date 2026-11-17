@@ -8,7 +8,7 @@
 - [x] refaire proprement les bons noms (train / valid) puis test
 - [ ] re ranger proprement les fichiers
 - [ ] entrainement avec bcp plus d'EPOCHS (100 ?) car sinon 800 * 0.8 = 640 images en training (640 / 32 batchs = 20 pas par epochs) si on fait que 5 epochs c'est que 100 pas
-- [ ] Dans base.transforms ==> mettre transforms.RandomCrop(256) ==> patch de 256 de l'image 
+- [x] Dans base.transforms ==> mettre transforms.RandomCrop(256) ==> patch de 256 de l'image 
       (chaque pas voit des patchs différents (donc bcp + de données) + image pas écrasée + détails conservés)
 - [x] MSELoss donne des couleurs saturées, utiliser nn.L1Loss ou nn.SmoothL1Loss
 - [x] Ajout batchNorm2d pour accélérer la convergence du UNet
