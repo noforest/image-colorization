@@ -7,12 +7,12 @@
 - [x] show_image
 - [x] refaire proprement les bons noms (train / valid) puis test
 - [ ] re ranger proprement les fichiers
-- [ ] entrainement avec bcp plus d'EPOCHS (100 ?) car sinon 800 * 0.8 = 640 images en training (640 / 32 batchs = 20 pas par epochs) si on fait que 5 epochs c'est que 100 pas
+- [x] entrainement avec bcp plus d'EPOCHS et early stopping (20) car sinon 800 * 0.8 = 640 images en training (640 / 32 batchs = 20 pas par epochs) si on fait que 5 epochs c'est que 100 pas
 - [x] Dans base.transforms ==> mettre transforms.RandomCrop(256) ==> patch de 256 de l'image 
       (chaque pas voit des patchs différents (donc bcp + de données) + image pas écrasée + détails conservés)
 - [x] MSELoss donne des couleurs saturées, utiliser nn.L1Loss ou nn.SmoothL1Loss
 - [x] Ajout batchNorm2d pour accélérer la convergence du UNet
-- [ ] densité de hints variable à l'entraînement (sinon modèle voit que du 1% et sera perdu)
+- [x] densité de hints variable à l'entraînement (sinon modèle voit que du 1% et sera perdu)
 - [ ] créer une fonction normalize et déplacer la fonction denormalize dans MyDataset
 - [x] Mettre des num_workers dans les DataLoaders
 - [x] factoriser show_image avec MyDataset
@@ -21,7 +21,8 @@
     - [x] valid : CenterCrop 256 (ou image entière), pas d'augmentation, Normalize + hints aléatoires
     - [x] test : image entière + pad pour être un multiple de 8, pas d'augmentation, Normalize + hints tirés avec une graine fixe (pour PSNR / SSIM reproductibles)
     (multiple de 8 car on fait 3 maxpool -- on a divisé l'image par 2, 3 fois donc 2^3=8)
-
+- [ ] faire de la cross validation ?
+- [ ] régler hyperparamètres en validation
 # autres approches
 - scribbles 
 - colorization à partir de ref (volorimétrie d'un animal sur une voiture par ex) ---- U-net

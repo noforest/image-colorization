@@ -15,7 +15,6 @@ MODEL_SAVE_PATH = DATA_DIR / "model_weights"
 
 class UNet(nn.Module):
     """
-    - Image d'entrée doit être 256 par 256
     - idée: https://miro.medium.com/v2/resize:fit:720/format:webp/1*1wV5-9EVb_3KmNjfuoTqkw.png
     - sortie = (taille - kernel + 2*padding) / stride + 1
         ex pour MaxPool2d(2) : stride par défaut c'est 1
@@ -60,8 +59,8 @@ class UNet(nn.Module):
 
         generator = torch.Generator().manual_seed(42)
 
-        train_dataset = MyDataset(sorted(C_TRAIN_PATH_IMAGES.iterdir()))
-        test_dataset = MyDataset(sorted(C_TEST_PATH_IMAGES.iterdir()))
+        train_dataset = MyDataset(sorted(C_TRAIN_PATH_IMAGES.iterdir()), split="train", n_aug=1)
+        # test_dataset = MyDataset(sorted(C_TEST_PATH_IMAGES.iterdir()))
 
         train_dataset, valid_dataset = random_split(train_dataset, [0.8, 0.2], generator=generator)
 

@@ -7,8 +7,6 @@ from skimage import io, color
 import numpy as np
 from pathlib import Path
 
-CSTE_MASQUE = 0.01
-
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT_DIR / "data"
 C_TRAIN_PATH_IMAGES = DATA_DIR / "colored" / "train"
@@ -119,8 +117,10 @@ class MyDataset(Dataset):
         img_A = img_LAB[1:2] # GROUND TRUTH
         img_B = img_LAB[2:3] # GROUND TRUTH
 
-        # 1% des pixels à 1, le reste à 0
-        masque = (torch.rand_like(img_L) < CSTE_MASQUE).float()
+        # entre 0.01% et 1% des pixels à 1, le reste à 0
+        log_min, log_max = -4, -2          # log10(1e-4), log10(1e-2)
+        p = 10 ** torch.empty(1).uniform_(log_min, log_max).item()
+        masque = (torch.rand_like(img_L) < p).float()
 
         a_hint = img_A * masque
         b_hint = img_B * masque
