@@ -1,4 +1,3 @@
-import os
 import random
 import numpy as np
 import torch
@@ -10,7 +9,6 @@ def seed_everything(seed: int = SEED, deterministic: bool = False) -> None:
     random.seed(seed)                 # module random de Python
     np.random.seed(seed)              # numpy (API globale)
     torch.manual_seed(seed)           # torch CPU + toutes les GPU
-    os.environ["PYTHONHASHSEED"] = str(seed)
 
     if deterministic:                 # reproductibilité exacte sur GPU, mais plus lent
         torch.backends.cudnn.deterministic = True

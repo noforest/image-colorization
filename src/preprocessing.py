@@ -117,10 +117,16 @@ class MyDataset(Dataset):
         img_A = img_LAB[1:2] # GROUND TRUTH
         img_B = img_LAB[2:3] # GROUND TRUTH
 
-        # entre 0.01% et 1% des pixels à 1, le reste à 0
+        """
+        log-uniforme entre 0.01% et 1% des pixels à 1, le reste à 0
+        - Train: un nouveau masque à chaque fois donc des données variées
+        - Valid: le meme masque pour chaque image à toutes les epochs donc loss comparables
+        - Test: même idée mais pour les métriques
+        """
         log_min, log_max = -4, -2          # log10(1e-4), log10(1e-2)
-        p = 10 ** torch.empty(1).uniform_(log_min, log_max).item()
-        masque = (torch.rand_like(img_L) < p).float()
+        g = None if self.split == "train" else torch.Generator().manual_seed(index)
+        p = 10 ** torch.empty(1).uniform_(log_min, log_max, generator=g).item()
+        masque = (torch.rand(img_L.shape, generator=g) < p).float()
 
         a_hint = img_A * masque
         b_hint = img_B * masque

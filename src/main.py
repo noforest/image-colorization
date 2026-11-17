@@ -28,7 +28,10 @@ if __name__ == "__main__":
         model.fit()
     else: # on prend le .pt le + récent
         pt_files = sorted(MODEL_SAVE_PATH.glob("*.pt"))
-        model.load_state_dict(torch.load(pt_files[-1], map_location=device))
+        if pt_files:    
+            model.load_state_dict(torch.load(pt_files[-1], map_location=device))
+        else:
+            sys.exit("Aucun .pt trouvé: relancer avec --retrain")
 
     #%%
     if args.image is not None:

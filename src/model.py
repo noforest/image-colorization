@@ -4,11 +4,10 @@ from unet_pieces import DownConv
 from unet_pieces import DoubleConv
 from torch import optim, nn
 import torch
-from preprocessing import C_TRAIN_PATH_IMAGES, C_TEST_PATH_IMAGES, DATA_DIR
+from preprocessing import C_TRAIN_PATH_IMAGES, DATA_DIR
 from preprocessing import MyDataset
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader
 from tqdm import tqdm
-import os
 from datetime import datetime
 import numpy as np
 from utils import SEED
@@ -56,12 +55,12 @@ class UNet(nn.Module):
     def fit(self, device="cuda" if torch.cuda.is_available() else "cpu", patience=3):
         LEARNING_RATE = 3e-4
         BATCH_SIZE = 32
-        EPOCHS = 2
+        EPOCHS = 20
         MODEL_SAVE_PATH.mkdir(exist_ok=True)
 
-        rng = np.random.default_rng(SEED)
-
         train_paths = np.asarray(sorted(C_TRAIN_PATH_IMAGES.iterdir()))
+
+        rng = np.random.default_rng(SEED)
         idx_shuffle = rng.permutation(len(train_paths))
         eighty = int(len(train_paths) * 0.8)
 
@@ -78,7 +77,7 @@ class UNet(nn.Module):
         valid_dataloader = DataLoader(dataset=valid_dataset,
                                      batch_size=BATCH_SIZE,
                                      num_workers=4,
-                                     shuffle=True)
+                                     shuffle=False)
 
         optimizer = optim.AdamW(self.parameters(), lr=LEARNING_RATE)
         criterion = nn.L1Loss()
@@ -133,7 +132,7 @@ class UNet(nn.Module):
             else:
                 wait += 1
                 if wait >= patience:
-                    print(f"EARLY STOPPING : meilleure EPOCH = {epoch+1-patience}"
+                    print(f"EARLY STOPPING : meilleure EPOCH = {epoch+1-patience} | "
                           f"val loss = {best_valid_loss}")
                     break
 
