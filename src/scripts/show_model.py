@@ -10,8 +10,10 @@ def denormalize_test_image(img_tensor: torch.Tensor, shape_original) -> torch.Te
     """ 
     L  = (lab[0:1] + 1.0) * 50.0  # [0,100] <- [-1,1]
     ab = lab[1:3] * 110.0         
-
-    shape_original est tirée d'un NDArray donc de la forme (H, W, ..)
+    
+    - img_tensor est, au départ, "arrondie" au multiple de 8 supérieur ==> on va crop ce
+    qui a été "arrondie/ajouté" par PadToMultiple(8)
+    - shape_original est tirée d'un NDArray donc de la forme (H, W, ..)
     """
 
     h, w = img_tensor.shape[-2], img_tensor.shape[-1]   # shape de l'image selon un multiple m
