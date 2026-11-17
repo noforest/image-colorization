@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset
 import torch
 import torchvision.transforms as transforms
+import torchvision.transforms.functional as F
 from skimage import io, color
 import numpy as np
 from pathlib import Path
@@ -13,12 +14,42 @@ C_TRAIN_PATH_IMAGES = DATA_DIR / "colored" / "train"
 C_TEST_PATH_IMAGES = DATA_DIR / "colored" / "test"
 SIZE_CROP = 256
 
+class PadToMultiple(transforms.Pad):
+    def __init__(self, m=8, fill=0, padding_mode="reflect"):
+        super().__init__(padding=0, fill=fill, padding_mode=padding_mode)
+        self.m = m
+
+    def forward(self, img):
+        """
+        Args:
+            img (PIL Image or Tensor): Image to be padded.
+
+        Returns:
+            PIL Image or Tensor: Padded image.
+        """
+        h, w = img.shape[-2], img.shape[-1]
+
+        if h % self.m != 0: 
+            pad_h = self.m - (h % self.m)   # combien de px à rajouter pour que ce soit un multiple de m
+        else: 
+            pad_h = 0                       # si multiple de 8 alors ne pas rajouter de padding inutile
+
+        if w % self.m != 0: 
+            pad_w = self.m - (w % self.m)
+        else: 
+            pad_w = 0
+
+        # (left, top, right and bottom) according to the doc
+        self.padding = (0, 0, pad_w, pad_h)
+        return F.pad(img, self.padding, self.fill, self.padding_mode)
+
+
+
 class MyDataset(Dataset):
     def __init__(self, image_paths, split="train", n_aug=0):
         self.image_paths = image_paths
         self.n_aug = n_aug
         self.split = split
-        self.path = image_paths
 
         # NOTE: à revoir valeurs
 
@@ -41,9 +72,9 @@ class MyDataset(Dataset):
 
 
             self.aug_transform = transforms.Compose([
+                transforms.RandomRotation(15),  # avant pour éviter les triangles noirs
                 transforms.RandomCrop(SIZE_CROP),
                 transforms.RandomHorizontalFlip(),
-                transforms.RandomRotation(15),
                 normalize,
                 ])
 
@@ -57,7 +88,7 @@ class MyDataset(Dataset):
 
         else:
             self.base_transform = transforms.Compose([
-                # faire un PadToMultiple(8)
+                PadToMultiple(8),
                 normalize,
                 ])
 
