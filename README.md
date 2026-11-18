@@ -73,6 +73,13 @@ A l'inférence : c'est l'utilisateur qui place les points.
 
 
 ## Historique des poids
+- `model20261117-2301.pt` : modèle avec des résultats honnêtes (terne car moins de hints au training)
+- commit `1697c7948dcb1024e8060558815ad50fc4cfe96f`
+  - lr 3e-4 (AdamW), batch 32, 20 epochs max, patience 3, loss L1
+  - crop 256, `n_aug=1`, masque selon densité log-uniforme entre 0.01% et 1 %, split 80/20, seed 42
+  - meilleure epoch 9/12, val loss 0.0889
+
+
 - `model20261117-1613.pt` : Premier modèle avec des résultats convaincants
   - commit `50b473bfc05184ce04456ca13f3aada283cc8a1f`
   - lr 3e-4 (AdamW), batch 32, 20 epochs max, patience 3, loss L1
@@ -90,3 +97,18 @@ To download the dataset, we set up a install and preparation scripts
 ```
 ./src/scripts/download_data.sh && python ./src/scripts/to_grayscale.py
 ```
+
+## Pourquoi l'ancien modèle semblait meilleur
+
+- ancien modèle `model20261117-1613.pt` est trained et tested avec 1% de pixels-hints --> conditions identiques d'où les couleurs vives et cohérentes
+Cependant 1 % d'une image 678x1020, c'est 6915 points --> pas réaliste pour un user à l'inférence --> donc modèle spécialisé sur un cas irréaliste
+--> j'ai testé à l'inférence avec p=1e-4=0.01% (soit 1020x678 x1e-4 = 69 hints placés), on a une image bien grise avec qlq pts de couleurs
+
+- Le modèle actuel `model20261117-2301.pt` est trained avec une densité log uniforme entre 0.01% et 1%. 
+    - Testé à 1%, il est au bord de sa plage d'entraînement: il étale trop les couleurs (bleu sur les montagnes), *et la BatchNorm, calibrée sur des densités plus faibles, sature.*
+    - Testé à une densité réaliste (0.01%), il donne des couleurs plus ternes --> ce modèle est moins beau mais plus honnête
+
+<!-- - Pistes : une plage de densités centrée sur la densité de test (ex. 0,1 %
+à 3 %) et des indices en petits carrés plutôt qu'en pixels isolés, comme dans
+Zhang et al. 2017. La val loss actuelle (0,0889) n'est pas comparable à
+l'ancienne (0,0524) : la densité moyenne des indices n'est pas la même. -->
