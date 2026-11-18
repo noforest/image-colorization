@@ -125,7 +125,9 @@ class MyDataset(Dataset):
         """
         log_min, log_max = -4, -2          # log10(1e-4), log10(1e-2)
         g = None if self.split == "train" else torch.Generator().manual_seed(index)
-        p = 10 ** torch.empty(1).uniform_(log_min, log_max, generator=g).item()
+        # TEST: jouer avec
+        # p = 10 ** torch.empty(1).uniform_(log_min, log_max, generator=g).item()
+        p = 0.01 if self.split == "test" else 10 ** torch.empty(1).uniform_(log_min, log_max, generator=g).item()
         masque = (torch.rand(img_L.shape, generator=g) < p).float()
 
         a_hint = img_A * masque

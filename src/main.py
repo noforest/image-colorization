@@ -14,9 +14,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--retrain", action="store_true", help="réentraîne le modèle au lieu de charger le dernier .pt")
     parser.add_argument("--image", type=str, help="image que l'on veut afficher après entraînement")
+    parser.add_argument("--load-model", type=str, help="poids du modèle qu'on veut utiliser")
 
     if "ipykernel" in sys.modules:
-        args, _ = parser.parse_known_args(["--image", "data/colored/test/0850x2.png"])  # TEST: tester image ici
+        args, _ = parser.parse_known_args(["--load-model", "data/model_weights/model20261117-2301.pt", "--image", "data/colored/test/0850x2.png"])  # TEST: tester image ici
     else:
         args, _ = parser.parse_known_args()
 
@@ -28,7 +29,12 @@ if __name__ == "__main__":
         model.fit()
     else: # on prend le .pt le + récent
         pt_files = sorted(MODEL_SAVE_PATH.glob("*.pt"))
-        if pt_files:    
+        if args.load_model is not None:
+            model_path = Path(args.load_model)
+            if not model_path.is_absolute():
+                model_path = ROOT_DIR / model_path
+            model.load_state_dict(torch.load(model_path, map_location=device))
+        elif pt_files:    
             model.load_state_dict(torch.load(pt_files[-1], map_location=device))
         else:
             sys.exit("Aucun .pt trouvé: relancer avec --retrain")
