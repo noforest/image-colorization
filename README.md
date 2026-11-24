@@ -1,7 +1,6 @@
 # Colorisation guidée par clics (U-Net, DIV2K)
 
-L'utilisateur clique quelques points sur une image en niveaux de gris et donne
-leur couleur ; le réseau colorise le reste.
+L'utilisateur clique quelques points sur une image en niveaux de gris et donne leur couleur. Le réseau colorise le reste.
 
 ## Pipeline
 
