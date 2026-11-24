@@ -17,7 +17,7 @@ if __name__ == "__main__":
     parser.add_argument("--load-model", type=str, help="poids du modèle qu'on veut utiliser")
 
     if "ipykernel" in sys.modules:
-        args, _ = parser.parse_known_args(["--load-model", "data/model_weights/model20261117-2301.pt", "--image", "data/colored/test/0850x2.png"])  # TEST: tester image ici
+        args, _ = parser.parse_known_args(["--load-model", "data/model_weights/1_model20261117-1613.pt", "--image", "data/colored/test/0851x2.png"])  # TEST: tester image ici
     else:
         args, _ = parser.parse_known_args()
 
