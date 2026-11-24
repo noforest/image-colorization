@@ -61,8 +61,9 @@ class MyDataset(Dataset):
                 )
 
         """
-        L  = lab[0:1] / 50.0 - 1.0   # [0,100] -> [-1,1]
-        ab = lab[1:3] / 110.0        # ~[-1,1], 0 reste 0
+        Normalize fait (x - mean) / std sur chaque canal :
+        L  = (lab[0:1] - 50) / 50    # [0,100] -> [-1,1]   (= lab/50 - 1)
+        ab = (lab[1:3] - 0) / 110    # ~[-1,1], 0 reste 0
         mask unchanged
         """
 
