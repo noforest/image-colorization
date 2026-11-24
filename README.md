@@ -23,6 +23,17 @@
     (multiple de 8 car on fait 3 maxpool -- on a divisé l'image par 2, 3 fois donc 2^3=8)
 - [ ] faire de la cross validation ?
 - [ ] régler hyperparamètres en validation
+- [ ] inférer en basse résolution (réduire ×2-4, prédire ab, remonter ab en bilinéaire, recoller le L d'origine) : le champ réceptif (~96 px) couvre alors plus de scène, teste l'hypothèse sans réentraîner
+- [ ] simuler des clics au lieu d'une densité (nombre géométrique p=1/8, 0 inclus) : 10 clics sur 678×1020 ≈ 1 hint par crop 256², jamais vu à l'entraînement (min ≈ 6,5)
+- [ ] hints en petits patchs 1×1 à 9×9 de couleur moyenne (Zhang 2017) : un pixel isolé est noyé dès la 1ʳᵉ conv, un clic utilisateur est une zone
+- [ ] `show_image(..., n_clicks=10)` au lieu de `p` : un nombre de clics a le même sens quelle que soit la taille de l'image
+- [ ] entraîner sur images réduites (côté court aléatoire 256-400 puis crop 256) : le crop voit presque toute la scène, cohérent avec l'inférence basse résolution
+- [ ] agrandir le champ réceptif (4ᵉ niveau UNet, convs dilatées ou branche globale dans le bottleneck) : un clic ne peut pas colorer un train de ~800 px avec un champ réceptif de ~96 px
+- [ ] encoder pré-entraîné ImageNet (resnet34 torchvision, conv1 passée à 4 canaux, pad multiple de 32) : le UNet from scratch sur 640 images n'apprend pas ce qu'est un objet, d'où des couleurs à cheval sur deux objets (chapeau bleu/beige)
+- [ ] remplacer BatchNorm par GroupNorm : les stats figées en eval ne s'adaptent pas au nombre de hints de test
+- [ ] L1 pondérée par la saturation de la vérité terrain : la L1 seule tend vers la médiane ≈ gris quand le modèle hésite, d'où les couleurs ternes
+- [ ] si encore terne, classification sur ab quantifié + rééquilibrage + annealed mean (Zhang 2016) : force le modèle à choisir une couleur au lieu de moyenner
+- [ ] en dernier recours, perte adversariale type ChromaGAN (cf. `refs/`) : couleurs plus réalistes mais entraînement plus lourd
 # autres approches
 - scribbles 
 - colorization à partir de ref (volorimétrie d'un animal sur une voiture par ex) ---- U-net
