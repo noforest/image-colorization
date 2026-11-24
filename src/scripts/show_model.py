@@ -33,7 +33,11 @@ def show_image(model, image_path, device):
     img_rgb = io.imread(image_path)
 
     # 1. Construction entrée sur cpu    (/!\ on peut pas convertir en numpy quand tenseur sur GPU)
-    x, _ = MyDataset([image_path], split="test", clicks=get_clicks(image_path))[0]   # [0] important ==> permet d'executer le __getitem__(index) où index vaut donc ici 0
+    clicks = get_clicks(image_path)
+    if clicks is None:
+        print("Place les clics sur la figure, puis relance cette cellule (supprimer le JSON dans clicks/ pour refaire).")
+        return
+    x, _ = MyDataset([image_path], split="test", clicks=clicks)[0]   # [0] important ==> permet d'executer le __getitem__(index) où index vaut donc ici 0
 
     img_L = x[0:1]                      # à garder pour le concat plus tard
     x_wo_mask = x[:-1]
@@ -53,22 +57,20 @@ def show_image(model, image_path, device):
     img_pred_rgb = convert_to_rgb(img_pred)
 
     # 4. Tracer les 3 figures
-    fig, axes = plt.subplots(1, 3, figsize=(20, 5))
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4))
     titles = [
         f"Image d'origine {img_rgb.shape[:-1]}",
-        f"Entrée avec qlq points de couleurs de l'image d'origine {x_wo_mask_rgb.shape[:-1]}",
+        f"Entrée avec qlq points de couleurs {x_wo_mask_rgb.shape[:-1]}",
         f"Image prédite colorisée {img_pred_rgb.shape[:-1]}",
     ]
     images = [img_rgb, x_wo_mask_rgb, img_pred_rgb]
 
     for i in range(len(axes)):
         axes[i].imshow(images[i])
-        axes[i].set_title(titles[i])
+        axes[i].set_title(titles[i], fontsize=9)
         axes[i].axis("off")
-        # axes[i].tight_layout()
 
     plt.suptitle(os.path.basename(image_path))
+    fig.tight_layout()
+
     plt.show()
-
-
-
