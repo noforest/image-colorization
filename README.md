@@ -136,3 +136,21 @@ To download the dataset, we set up a install and preparation scripts
 <!-- - Pistes : une plage de densités centrée sur la densité de test (ex. 0,1 %
 à 3 %) et des indices en petits carrés plutôt qu'en pixels isolés, comme dans
 Zhang et al. 2017. -->
+
+
+## UPDATE UpConv
+class UpConv(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+        self.up = nn.ConvTranspose2d(in_channels, in_channels//2, kernel_size=2, stride=2)
+        self.conv = DoubleConv(in_channels, out_channels)
+
+    def forward(self, x1, x2):
+        x1 = self.up(x1)
+        diffY = x2.size()[2] - x1.size()[2]
+        diffX = x2.size()[3] - x1.size()[3]
+
+        x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2, diffY // 2, diffY - diffY // 2])
+
+        x = torch.cat([x1, x2], 1) # NOTE : /!\ on colle la conv du down par la droite, vaut-il mieux que ce soit par la gauche ??
+        return self.conv(x)
