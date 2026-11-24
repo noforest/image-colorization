@@ -6,6 +6,7 @@ from skimage import io
 import matplotlib.pyplot as plt
 import torchvision.transforms.functional as F
 from hints import *
+from utils import add_copy_button
 
 def denormalize_test_image(img_tensor: torch.Tensor, shape_original) -> torch.Tensor:
 
@@ -74,3 +75,4 @@ def show_image(model, image_path, device):
     fig.tight_layout()
 
     plt.show()
+    add_copy_button(fig)
