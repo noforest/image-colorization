@@ -1,9 +1,118 @@
+# Colorisation guidée par clics (U-Net, DIV2K)
+
+L'utilisateur clique quelques points sur une image en niveaux de gris et donne
+leur couleur ; le réseau colorise le reste.
+
+## Pipeline
+
+```
+DIV2K (800 images couleur en train, 100 en validation)
+- passage en Lab : L = entrée, (a, b) = cible
+
+- carrés de 256 × 256 tirés au hasard, retournements (augmentation)
+
+- scribbles simulés: quelques pixels tirés au hasard gardent leur vraie
+  couleur (a, b) /!\ un masque vaut 1 sur ces pixels, 0 ailleurs
+
+- U-Net : entrée 4 canaux = L + (a, b) des scribbles + masque PUIS sortie (a, b)
+
+- perte entre (a, b) prédits et vrais, sur toute l'image
+
+- on recolle L d'origine + (a, b) prédits → conversion en RVB
+
+- évaluation : PSNR, SSIM, LPIPS selon le nombre de scribbles, et regarder
+  les images
+
+A l'inférence : c'est l'utilisateur qui place les points.
+- clic gauche : ajouter, clic droit : annuler
+- clics sauvegardés dans clicks/<image>.json (supprimer le fichier pour refaire)
+- chaque clic = carré 7 × 7 de la couleur moyenne autour du point
+```
+
+Lab converti à la volée (pas précalculé) : même résultat, ~1,5 Go de PNG au
+lieu de ~7 Go de Lab, une seule source de données, même code à l'entraînement
+et à l'inférence.
+
+## Pourquoi la couleur reste près du point cliqué
+
+- À l'entraînement, le modèle voit beaucoup d'indices (6 à 655 pixels par crop
+  256 × 256 -- car on choisi le nombre de hints selon une densité suivant une loi
+  log-uniforme) : la vraie couleur est toujours à ~5-10 px. Il a donc appris à
+  recopier l'indice le plus proche sur quelques pixels, pas à propager loin.
+- Avec 10 clics sur 678 × 1020, les clics sont à ~260 px les uns des autres :
+  c'est un cas jamais vu.
+- Un pixel de sortie ne « voit » qu'environ 100 px autour de lui (champ
+  réceptif) : loin d'un clic, il ne voit aucune couleur et prédit du gris.
+- Les clics sont des carrés 7 × 7, alors qu'à l'entraînement ce sont des
+  pixels isolés.
+
+Pour y remédier : simuler de vrais clics à l'entraînement (peu de patchs de
+couleur moyenne) et agrandir le champ réceptif (cf. TODO, étapes 2 et 3).
+
+## TODO (dans l'ordre)
+
+1. [ ] **Métriques** PSNR / SSIM / LPIPS selon le nombre de clics : pour
+   comparer chaque changement qui suit
+2. [ ] **Simuler des clics à l'entraînement** au lieu d'une densité de pixels :
+   nombre de clics géométrique (p=1/8, 0 inclus), patchs de 1×1 à 9×9 de couleur
+   moyenne (Zhang 2017). Aujourd'hui le modèle voit 6 à 655 pixels isolés par
+   crop, alors que 10 clics sur 678×1020 ≈ 1 patch 7×7 par crop : jamais vu, d'où
+   la couleur qui reste autour du point
+3. [ ] **Agrandir le champ réceptif** (~100 px aujourd'hui) : 4ᵉ niveau /
+   maxpool en plus (en cours, donne de meilleurs résultats), sinon convs dilatées
+   ou branche globale dans le bottleneck\
+**Tout ce qui est en dessous est optionnel je pense :**
+4. [ ] *(seulement si besoin)* Remplacer BatchNorm par GroupNorm : utile
+   uniquement si le nombre de clics au test sort de la plage vue à
+   l'entraînement (après l'étape 2 ce ne devrait plus être le cas)
+5. [ ] *(optionnel)* Augmentation d'échelle : redimensionner aléatoirement
+   (côté court entre 256 et la taille d'origine) avant le crop 256, pour être
+   robuste à la taille des objets. Pas d'entraînement sur images seulement
+   réduites : on infère en pleine résolution, les objets n'auraient pas la
+   même taille
+6. [ ] L1 pondérée par la saturation de la vérité terrain : la L1 seule tend
+   vers la médiane ≈ gris quand le modèle hésite
+7. [ ] Encodeur pré-entraîné ImageNet (resnet34, conv1 à 4 canaux, pad multiple
+   de 32) : le U-Net from scratch sur 640 images ne sait pas ce qu'est un objet
+   (couleurs à cheval sur deux objets)
+8. [ ] Si encore terne : classification sur ab quantifié + rééquilibrage +
+   annealed mean (Zhang 2016)
+9. [ ] En dernier recours : perte adversariale type ChromaGAN (cf. `refs/`)
+10. [ ] Régler les hyperparamètres en validation
+11. [ ] Rangement : `normalize` / `denormalize` dans `MyDataset`, re-ranger les fichiers
+
+## Historique des poids
+
+| Poids | Commit | Indices à l'entraînement | Meilleure epoch | Val loss |
+|---|---|---|---|---|
+| `1_model20261117-1613.pt` | `50b473b` | masque 1 %, `n_aug=0` | 12/15 | 0.0524 |
+| `model20261117-2301.pt` | `1697c79` | densité log-uniforme 0,01 %-1 %, `n_aug=1` | 9/12 | 0.0889 |
+
+Communs : AdamW lr 3e-4, batch 32, patience 3, L1, crop 256, split seed 42.
+Les deux val loss ne sont pas comparables (densités d'indices différentes).
+
+- `1613` paraît meilleur car testé dans ses conditions d'entraînement (1 % =
+  ~6900 points sur 678×1020, irréaliste pour un utilisateur) ; à 0,01 % il
+  sort une image grise.
+- `2301` est plus honnête mais terne à faible densité, et étale trop les
+  couleurs à 1 % (bord de sa plage, aggravé par la BatchNorm).
+
+## Dataset
+
+```
+./src/scripts/download_data.sh
+```
+
+- [DIV2K train LR x2](http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_train_LR_bicubic_X2.zip)
+- [DIV2K valid LR x2](http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_valid_LR_bicubic_X2.zip)
+
+## Ancien TODO
+
 - [x] transformer les images en couleurs en niveau de gris (gratuit) --> pour données d'entrainement --> utiliser div2k
 - [x] pour le scribbles: laisser 1% de couleur dans les images grises pour prédire le reste. (couleurs réelles) (pour entrainement)
 - [ ] à l'inférence c'est l'utilisateur qui donne les couleurs
 - [ ] metrics psnr, signature noise metric
 
-## TODO
 - [x] show_image
 - [x] refaire proprement les bons noms (train / valid) puis test
 - [ ] re ranger proprement les fichiers
@@ -34,111 +143,12 @@
 - [ ] L1 pondérée par la saturation de la vérité terrain : la L1 seule tend vers la médiane ≈ gris quand le modèle hésite, d'où les couleurs ternes
 - [ ] si encore terne, classification sur ab quantifié + rééquilibrage + annealed mean (Zhang 2016) : force le modèle à choisir une couleur au lieu de moyenner
 - [ ] en dernier recours, perte adversariale type ChromaGAN (cf. `refs/`) : couleurs plus réalistes mais entraînement plus lourd
-# autres approches
-- scribbles 
-- colorization à partir de ref (volorimétrie d'un animal sur une voiture par ex) ---- U-net
-- reseau de neuronnes profonds
-
-## Pipeline
-
-```
-DIV2K (800 images couleur en train, 100 en validation)
-- passage en Lab : L = entrée, (a, b) = cible
-
-- carrés de 256 × 256 tirés au hasard, retournements (augmentation)
-
-- scribbles simulés: quelques pixels tirés au hasard gardent leur vraie
-  couleur (a, b) /!\ un masque vaut 1 sur ces pixels, 0 ailleurs
-
-- U-Net : entrée 4 canaux = L + (a, b) des scribbles + masque PUIS sortie (a, b)
-
-- perte entre (a, b) prédits et vrais, sur toute l'image
-
-- on recolle L d'origine + (a, b) prédits → conversion en RVB
-
-- évaluation : PSNR, SSIM, LPIPS selon le nombre de scribbles, et regarder
-  les images
-
-A l'inférence : c'est l'utilisateur qui place les points.
-```
-
-## choix de convertir en lab à la volée
-
-- Même résultat : le recadrage et le retournement donnent la même chose avant
-  ou après la conversion en Lab. Précalculer ne fait donc rien gagner en
-  qualité.
-- Coût négligeable : rgb2lab sur un carré 256×256 prend quelques millisecondes.
-  Avec plusieurs workers dans le DataLoader, c'est caché derrière
-  l'entraînement sur GPU.
-- Moins d'espace disque : le Lab en float32 prend ~7 Go, contre ~1,5 Go pour
-  les PNG d'origine.
-- Une seule source de données : pas de deuxième copie du dataset à régénérer et
-  à garder synchronisée si on change quelque chose.
-- Plus souple : on peut ajouter des augmentations de couleur (luminosité,
-  saturation…), qui se font en RVB, ou changer la normalisation, sans tout
-  recalculer.
-- Même code pour l'entraînement et l'inférence : à l'inférence, l'utilisateur
-  fournit une image RVB, il faut donc de toute façon convertir à la volée.
-- Pipeline plus simple : une étape de préparation en moins, plus facile à
-  expliquer dans le README.
-
-
-## Historique des poids
-- `model20261117-2301.pt` : modèle avec des résultats honnêtes (terne à faible densité, couleurs fausses à 1 % -- car moins de hints au training)
-  - commit `1697c7948dcb1024e8060558815ad50fc4cfe96f`
-  - lr 3e-4 (AdamW), batch 32, 20 epochs max, patience 3, loss L1
-  - crop 256, `n_aug=1`, masque selon densité log-uniforme entre 0.01% et 1 %, split 80/20, seed 42
-  - meilleure epoch 9/12, val loss 0.0889
-
-
-- `model20261117-1613.pt` : Premier modèle avec des résultats convaincants
-  - commit `50b473bfc05184ce04456ca13f3aada283cc8a1f`
-  - lr 3e-4 (AdamW), batch 32, 20 epochs max, patience 3, loss L1
-  - crop 256, `n_aug=0`, masque 1 %, split 80/20 seed 42
-  - meilleure epoch 12/15, val loss 0.0524
-  - seul le split est seedé : réentraîner donne des poids proches, pas identiques
-
-## Dataset
-
-[http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_train_LR_bicubic_X2.zip](http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_train_LR_bicubic_X2.zip)
-[http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_valid_LR_bicubic_X2.zip](http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_valid_LR_bicubic_X2.zip)
-
-To download the dataset, we set up a install and preparation scripts
-
-```
-./src/scripts/download_data.sh && python ./src/scripts/to_grayscale.py
-```
-
-## Pourquoi l'ancien modèle semblait meilleur
-
-- ancien modèle `model20261117-1613.pt` est trained et tested avec 1% de
-  pixels-hints --> conditions identiques d'où les couleurs vives et cohérentes
-    - Cependant 1 % d'une image 678x1020, c'est 6915 points --> pas réaliste
-      pour un user à l'inférence --> donc modèle spécialisé sur un cas
-      irréaliste
-    - j'ai testé à l'inférence avec p=1e-4=0.01% (soit 1020x678 x1e-4 = 69
-      hints placés), on a une image bien grise avec qlq pts de couleurs
-
-- Le modèle actuel `model20261117-2301.pt` est trained avec une densité log
-  uniforme entre 0.01% et 1%. 
-    - Testé à 1%: il est au bord de sa plage d'entraînement: il étale trop les
-      couleurs (bleu sur les montagnes) et la BatchNorm aggrave ça : en eval
-      elle normalise avec des statistiques figées apprises sur des densités
-      surtout faibles, donc elle ne s'adapte pas à 1 % d'où des valeurs a/b
-      extrêmes
-    - Testé à une densité réaliste (0.01%), il donne des couleurs plus ternes
-      --> ce modèle est moins beau mais plus honnête
-    - Attention: 0.01% est aussi un bord de la plage d'entraînement, le test
-      juste est au milieu (0.1%, ≈ 690 hints)
-- La val loss actuelle (0,0889) n'est pas comparable à l'ancienne (0,0524): la
-  densité moyenne des hints n'est pas la même.
-
-<!-- - Pistes : une plage de densités centrée sur la densité de test (ex. 0,1 %
-à 3 %) et des indices en petits carrés plutôt qu'en pixels isolés, comme dans
-Zhang et al. 2017. -->
-
 
 ## UPDATE UpConv
+
+Pad de `x1` après l'upsampling pour combler l'écart de taille avec `x2` (skip connection).
+
+```python
 class UpConv(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
@@ -154,3 +164,4 @@ class UpConv(nn.Module):
 
         x = torch.cat([x1, x2], 1) # NOTE : /!\ on colle la conv du down par la droite, vaut-il mieux que ce soit par la gauche ??
         return self.conv(x)
+```
