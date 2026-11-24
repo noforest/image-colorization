@@ -6,8 +6,9 @@ import torchvision.transforms.functional as F
 from skimage import io, color
 import numpy as np
 from pathlib import Path
+from hints import make_hints, get_clicks
+from utils import ROOT_DIR
 
-ROOT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT_DIR / "data"
 C_TRAIN_PATH_IMAGES = DATA_DIR / "colored" / "train"
 C_TEST_PATH_IMAGES = DATA_DIR / "colored" / "test"
@@ -46,10 +47,11 @@ class PadToMultiple(transforms.Pad):
 
 
 class MyDataset(Dataset):
-    def __init__(self, image_paths, split="train", n_aug=0):
+    def __init__(self, image_paths, split="train", n_aug=0, clicks=None):
         self.image_paths = image_paths
         self.n_aug = n_aug
         self.split = split
+        self.clicks = clicks
 
         # NOTE: à revoir valeurs
 
@@ -133,7 +135,13 @@ class MyDataset(Dataset):
         a_hint = img_A * masque
         b_hint = img_B * masque
 
-        x = torch.cat([img_L, a_hint, b_hint, masque], dim=0)
+        ab = torch.cat([img_A, img_B], dim=0)
+        if self.clicks is not None:                  # test : clics donnés
+            ab_hint, masque = make_hints(ab, self.clicks)
+        else:                                        # train / valid : tirage actuel (changera à l'étape 2)
+            ab_hint = ab * masque
+
+        x = torch.cat([img_L, ab_hint, masque], dim=0)
 
         return x, torch.cat([img_A, img_B], dim=0)
 

@@ -1,9 +1,11 @@
+import os
 from preprocessing import MyDataset
 from scripts.to_lab import convert_to_rgb
 import torch
 from skimage import io
 import matplotlib.pyplot as plt
 import torchvision.transforms.functional as F
+from hints import *
 
 def denormalize_test_image(img_tensor: torch.Tensor, shape_original) -> torch.Tensor:
 
@@ -31,7 +33,8 @@ def show_image(model, image_path, device):
     img_rgb = io.imread(image_path)
 
     # 1. Construction entrée sur cpu    (/!\ on peut pas convertir en numpy quand tenseur sur GPU)
-    x, _ = MyDataset([image_path], split="test")[0]   # [0] important ==> permet d'executer le __getitem__(index) où index vaut donc ici 0
+    x, _ = MyDataset([image_path], split="test", clicks=get_clicks(image_path))[0]   # [0] important ==> permet d'executer le __getitem__(index) où index vaut donc ici 0
+
     img_L = x[0:1]                      # à garder pour le concat plus tard
     x_wo_mask = x[:-1]
     x_wo_mask = denormalize_test_image(x_wo_mask, img_rgb.shape).permute(1, 2, 0).numpy() # on permute car dans numpy ça doit être de la forme (H, W, channel_axis)
@@ -64,6 +67,7 @@ def show_image(model, image_path, device):
         axes[i].axis("off")
         # axes[i].tight_layout()
 
+    plt.suptitle(os.path.basename(image_path))
     plt.show()
 
 

@@ -7,6 +7,7 @@ import torch
 from scripts.show_model import show_image
 import sys
 from utils import seed_everything
+from IPython import get_ipython
 
 if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -17,6 +18,7 @@ if __name__ == "__main__":
     parser.add_argument("--load-model", type=str, help="poids du modèle qu'on veut utiliser")
 
     if "ipykernel" in sys.modules:
+        get_ipython().run_line_magic("matplotlib", "widget")   # fenêtre séparée pour que ginput reçoive les clics
         args, _ = parser.parse_known_args(["--load-model", "data/model_weights/1_model20261117-1613.pt", "--image", "data/colored/test/0851x2.png"])  # TEST: tester image ici
     else:
         args, _ = parser.parse_known_args()

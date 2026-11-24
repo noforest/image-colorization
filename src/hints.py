@@ -1,7 +1,7 @@
 import torch
 import json
 from pathlib import Path
-from preprocessing import ROOT_DIR
+from utils import ROOT_DIR
 import matplotlib.pyplot as plt
 from skimage import io
 
