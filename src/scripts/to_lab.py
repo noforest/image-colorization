@@ -37,21 +37,4 @@ def convert_to_rgb(img_lab: NDArray[Any]):
         lab_img = color.lab2rgb(img_lab)
     return lab_img
 
-def save_lab(lab_img, filename, train=True):
-    name = Path(filename).stem + ".npy"
-    if train:
-        np.save(f'{LAB_TRAIN_PATH}/{name}', lab_img)
-    else:
-        np.save(f'{LAB_VALID_PATH}/{name}', lab_img)
 
-
-if __name__ == "__main__":
-    
-    c_images = os.listdir(C_TRAIN_PATH_IMAGES)
-    for f in tqdm.tqdm(c_images):
-        img_lab = convert_to_lab(f"{C_TRAIN_PATH_IMAGES}/{f}")
-        save_lab(img_lab, f)
-    c_images = os.listdir(C_VALID_PATH_IMAGES)
-    for f in tqdm.tqdm(c_images):
-        img_lab = convert_to_lab(f"{C_VALID_PATH_IMAGES}/{f}")
-        save_lab(img_lab, f, train=False)
