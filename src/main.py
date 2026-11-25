@@ -16,6 +16,7 @@ if __name__ == "__main__":
     parser.add_argument("--retrain", action="store_true", help="réentraîne le modèle au lieu de charger le dernier .pt")
     parser.add_argument("--image", type=str, help="image que l'on veut afficher après entraînement")
     parser.add_argument("--load-model", type=str, help="poids du modèle qu'on veut utiliser")
+    parser.add_argument("--test", action="store_true", help="Tester notre modèle avec les métriques PSNR, SSIM, LPIPS")
 
     if "ipykernel" in sys.modules:
         get_ipython().run_line_magic("matplotlib", "widget")   # fenêtre séparée pour que ginput reçoive les clics
@@ -41,6 +42,8 @@ if __name__ == "__main__":
         else:
             sys.exit("Aucun .pt trouvé: relancer avec --retrain")
 
+    if args.test:
+        model.test(device)
     #%%
     if args.image is not None:
         image_path = Path(args.image)

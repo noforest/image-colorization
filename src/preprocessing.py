@@ -166,7 +166,7 @@ class MyDataset(Dataset):
             """
             u = torch.rand(1, generator=g).item()
             n = int(math.log(1 - u) / math.log(1 - self.p_geom))
-            idx = torch.randperm(H * W, generator=g)[:n]   # n positions distinctes, uniformes dans le crop
+            idx = torch.randperm(H * W, generator=g)[:n]
             points = torch.stack([idx // W, idx % W], dim=1).tolist()
 
         ab_hint, masque = make_hints(ab, points)

@@ -100,7 +100,7 @@ def auto_clicks(image_path, n=10):
 
     points = []
 
-    for label in segments_sizes:
+    for label, _ in segments_sizes.most_common():
         if label == 0: # label 0 pour le background
             continue
         elif len(points) == n:
