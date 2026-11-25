@@ -1,11 +1,10 @@
-from preprocessing import C_TEST_PATH_IMAGES
 import copy
 from unet_pieces import UpConv
 from unet_pieces import DownConv
 from unet_pieces import DoubleConv
 from torch import optim, nn
 import torch
-from preprocessing import C_TRAIN_PATH_IMAGES, DATA_DIR
+from preprocessing import C_TRAIN_PATH_IMAGES, DATA_DIR, C_TEST_PATH_IMAGES
 from preprocessing import MyDataset
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -15,7 +14,8 @@ from utils import SEED
 from torch.nn import Tanh
 from torchmetrics import PeakSignalNoiseRatio, StructuralSimilarityIndexMeasure
 from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
-import numpy as np
+from preprocessing import denormalize_test_image
+from scripts.to_lab import convert_to_rgb
 
 MODEL_SAVE_PATH = DATA_DIR / "model_weights"
 
@@ -150,10 +150,11 @@ class UNet(nn.Module):
             print(f"lpips EPOCH {epoch+1}: {psnr_batch / (idx + 1)}")
             print("-"*30)
 
-            history["train_loss"], history["val_loss"] = train_loss, val_loss
-            history["psnr"] = psnr_batch / (idx + 1)
-            history["ssim"] = ssim_batch / (idx + 1)
-            history["lpips"] = lpips_batch / (idx + 1)
+            history["train_loss"].append(train_loss)
+            history["val_loss"].append(val_loss)
+            history["psnr"].append(psnr_batch / (idx + 1))
+            history["ssim"].append(ssim_batch / (idx + 1))
+            history["lpips"].append(lpips_batch / (idx + 1))
 
 
             if val_loss < best_valid_loss:

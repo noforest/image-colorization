@@ -4,7 +4,7 @@ from pathlib import Path
 import argparse
 from model import UNet, MODEL_SAVE_PATH
 import torch
-from scripts.show_model import show_image, show_image_test
+from scripts.show_model import show_image
 import sys
 from utils import seed_everything
 from IPython import get_ipython
@@ -51,5 +51,5 @@ if __name__ == "__main__":
             image_path = ROOT_DIR / image_path
 
         # show_image(model, image_path, device)
-        show_image(model, image_path, device, test=True, show_hints=True)
+        show_image(model, image_path, device, test=args.test, show_hints=True)
 # %%

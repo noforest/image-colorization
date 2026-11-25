@@ -16,6 +16,27 @@ C_TEST_PATH_IMAGES = DATA_DIR / "colored" / "test"
 SIZE_CROP = 256
 SIZE_CROP_ROT = 320
 
+def denormalize_test_image(img_tensor: torch.Tensor, shape_original) -> torch.Tensor:
+
+    """
+    L  = (lab[0:1] + 1.0) * 50.0  # [0,100] <- [-1,1]
+    ab = lab[1:3] * 110.0
+
+    - img_tensor est, au départ, "arrondie" au multiple de 8 supérieur ==> on va crop ce
+    qui a été "arrondie/ajouté" par PadToMultiple(8)
+    - shape_original est tirée d'un NDArray donc de la forme (H, W, ..)
+    """
+
+    h, w = img_tensor.shape[-2], img_tensor.shape[-1]   # shape de l'image selon un multiple m
+    pad_h, pad_w = h - shape_original[0], w - shape_original[1]
+    img_tensor = F.crop(img_tensor, 0, 0, h-pad_h, w-pad_w)
+
+    img_L = (img_tensor[0:1] + 1.0) * 50.0
+    img_ab = img_tensor[1:3] * 110.0
+
+    return torch.cat([img_L, img_ab], dim=0)
+
+
 class PadToMultiple(transforms.Pad):
     def __init__(self, m=8, fill=0, padding_mode="reflect"):
         super().__init__(padding=0, fill=fill, padding_mode=padding_mode)
