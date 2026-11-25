@@ -7,7 +7,7 @@ from skimage import io, color
 import numpy as np
 import math
 from pathlib import Path
-from hints import make_hints, get_clicks
+from hints import make_hints, make_hints_automatic
 from utils import ROOT_DIR
 
 DATA_DIR = ROOT_DIR / "data"
@@ -141,23 +141,27 @@ class MyDataset(Dataset):
         utilisateur.
 
         """
-        # train : nouveaux clics à chaque fois ; valid / test : graine fixe => loss et métriques comparables
-        g = None if self.split == "train" else torch.Generator().manual_seed(index)
+
+        # NOTE: A BIEN RELIRE et comprendre ar pas eu le temps
+        # pourquoi pas juste la fonction distribution geometric de torch
 
         ab = torch.cat([img_A, img_B], dim=0)
         _, H, W = img_L.shape
 
         if self.click_user is not None:              # clics de l'utilisateur
             points = self.click_user
+        elif self.split == "test":
+            # clics "intelligents" sur l'image entière (segmentation, cf. hints.py).
+            # Le pad de test n'ajoute des pixels qu'à droite / en bas : les coordonnées restent valides.
+            points = make_hints_automatic(self.image_paths[real_index], n=self.n_clicks)
         else:
-            if self.split == "test":                 # nombre de clics fixé (courbes de métriques)
-                n = self.n_clicks
-            else:
-                # géométrique(p) par inversion de la CDF : P(n >= k) = (1 - p)^k
-                # (torch.distributions n'accepte pas de générateur => valid non reproductible)
-                u = torch.rand(1, generator=g).item()
-                n = int(math.log(1 - u) / math.log(1 - self.p_geom))
-            idx = torch.randperm(H * W, generator=g)[:n]   # n positions distinctes, uniformes
+            # train : nouveaux clics à chaque fois ; valid : graine fixe => val loss comparable
+            g = None if self.split == "train" else torch.Generator().manual_seed(index)
+            # nombre ~ géométrique(p) par inversion de la CDF : P(n >= k) = (1 - p)^k
+            # (torch.distributions n'accepte pas de générateur => valid non reproductible)
+            u = torch.rand(1, generator=g).item()
+            n = int(math.log(1 - u) / math.log(1 - self.p_geom))
+            idx = torch.randperm(H * W, generator=g)[:n]   # n positions distinctes, uniformes dans le crop
             points = torch.stack([idx // W, idx % W], dim=1).tolist()
 
         ab_hint, masque = make_hints(ab, points)
