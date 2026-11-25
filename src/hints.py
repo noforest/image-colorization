@@ -3,7 +3,7 @@ import json
 import sys
 import numpy as np
 from pathlib import Path
-from .utils import ROOT_DIR
+from utils import ROOT_DIR
 import matplotlib.pyplot as plt
 from skimage import io, color
 from skimage.segmentation import felzenszwalb
@@ -115,9 +115,9 @@ def auto_clicks(image_path, n=10, epsion=0.0, gaussian=False):
                 points.append(np.random.default_rng().multivariate_normal(mu, Sigma))
 
     for label, _ in segments_sizes.most_common():
-        if label == 0: # label 0 pour le background
-            continue
-        elif len(points) == n:
+        # if label == 0: # label 0 pour le background
+        #     continue
+        if len(points) == n:
             break
         points.append(np.mean(np.where(segments == label), axis=1))
 

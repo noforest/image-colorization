@@ -203,7 +203,7 @@ class UNet(nn.Module):
         self.eval()
 
         test_running_loss = 0
-        results = {"test_loss": [], "psnr": [], "ssim": [], "lpips": []}
+        results = {}
         with torch.no_grad():
 
             for idx, (image, labels) in enumerate(tqdm(test_dataloader)):
@@ -214,7 +214,7 @@ class UNet(nn.Module):
                 loss = criterion(y_pred, labels)
                 test_running_loss += loss.item()
 
-                pred_rgb = to_rgb(img[:, 0:1], y_pred) 
+                pred_rgb = to_rgb(img[:, 0:1], y_pred)
                 true_rgb = to_rgb(img[:, 0:1], labels)
                 psnr.update(pred_rgb, true_rgb)
                 ssim.update(pred_rgb, true_rgb)

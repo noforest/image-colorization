@@ -4,6 +4,7 @@ from scripts.to_lab import convert_to_rgb
 import torch
 from skimage import io
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 import torchvision.transforms.functional as F
 from hints import *
 from utils import add_copy_button
@@ -58,5 +59,52 @@ def show_image(model, image_path, device, test=False, show_hints=False):
     plt.suptitle(os.path.basename(image_path))
     fig.tight_layout()
 
+    plt.show()
+    add_copy_button(fig)
+
+
+def show_metrics(history):
+    """
+    - history de fit()  : listes (1 valeur par epoch) => courbes, train & valid superposées pour la loss
+    - results de test() : {"test_loss": .., "psnr": .., ...} => une barre par métrique avec sa valeur
+    Chaque subplot a sa propre échelle (sinon PSNR ~25 écraserait SSIM ~0.9).
+    """
+    # titre + 1 ligne d'explication (affichée sur chaque plot)
+    titles = {"loss":  "L1 loss (lower is better)",
+              "psnr":  "PSNR en dB (higher is better)\n"
+                       "fidélité pixel à pixel (basé sur MSE)",
+              "ssim":  "SSIM (higher is better, max 1)\n"
+                       "similarité de structure : contrastes, textures, contours",
+              "lpips": "LPIPS (lower is better, 0 = identique)\n"
+                       "distance perçue par un réseau (AlexNet), proche de l'oeil humain"}
+
+    fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+    ax = dict(zip(titles, axes.flat))   # 2x2 -> {"loss": ax, "psnr": ax, ...}
+
+    if "train_loss" in history:         # ---- fit() : courbes
+        epochs = range(1, len(history["train_loss"]) + 1)
+        ax["loss"].plot(epochs, history["train_loss"], marker="o", label="train")
+        ax["loss"].plot(epochs, history["val_loss"], marker="o", label="valid")
+        ax["loss"].legend()
+        for k in ("psnr", "ssim", "lpips"):
+            ax[k].plot(epochs, history[f"val_{k}"], marker="o", label="valid")
+        for a in ax.values():
+            a.set_xlabel("epoch")
+            a.xaxis.set_major_locator(MaxNLocator(integer=True))   # epochs entières (pas 1.25, 1.5...)
+        fig.suptitle("Courbes d'entraînement")
+
+    else:                               # ---- test() : une barre par métrique
+        for k, a in ax.items():
+            key = "test_loss" if k == "loss" else k
+            bars = a.bar(["modèle"], [history[key]], width=0.4)
+            a.bar_label(bars, fmt="%.3f")
+            a.margins(y=0.15)           # place pour l'étiquette au-dessus de la barre
+        fig.suptitle("Métriques de test")
+
+    for k, a in ax.items():
+        a.set_title(titles[k], fontsize=10)
+        a.grid(alpha=0.3)
+
+    fig.tight_layout()
     plt.show()
     add_copy_button(fig)

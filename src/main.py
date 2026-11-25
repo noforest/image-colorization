@@ -4,7 +4,7 @@ from pathlib import Path
 import argparse
 from model import UNet, MODEL_SAVE_PATH
 import torch
-from scripts.show_model import show_image
+from scripts.show_model import show_image, show_metrics
 import sys
 from utils import seed_everything
 from IPython import get_ipython
@@ -29,7 +29,8 @@ if __name__ == "__main__":
 
     model = UNet(in_channels=4).to(device)
     if args.retrain:
-        model.fit()
+        history = model.fit()
+        show_metrics(history)
     else: # on prend le .pt le + récent
         pt_files = sorted(MODEL_SAVE_PATH.glob("*.pt"))
         if args.load_model is not None:
@@ -43,7 +44,8 @@ if __name__ == "__main__":
             sys.exit("Aucun .pt trouvé: relancer avec --retrain")
 
     if args.test:
-        model.test(device)
+        results = model.test(device)
+        show_metrics(results)
     #%%
     if args.image is not None:
         image_path = Path(args.image)
