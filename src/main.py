@@ -37,7 +37,7 @@ if __name__ == "__main__":
             if not model_path.is_absolute():
                 model_path = ROOT_DIR / model_path
             model.load_state_dict(torch.load(model_path, map_location=device))
-        elif pt_files:    
+        elif pt_files:
             model.load_state_dict(torch.load(pt_files[-1], map_location=device))
         else:
             sys.exit("Aucun .pt trouvé: relancer avec --retrain")
@@ -51,5 +51,5 @@ if __name__ == "__main__":
             image_path = ROOT_DIR / image_path
 
         # show_image(model, image_path, device)
-        show_image_test(model, image_path, device)
+        show_image(model, image_path, device, test=True, show_hints=True)
 # %%
