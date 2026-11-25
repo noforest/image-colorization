@@ -1,10 +1,14 @@
 import torch
 import json
 import sys
+import numpy as np
 from pathlib import Path
-from utils import ROOT_DIR
+from .utils import ROOT_DIR
 import matplotlib.pyplot as plt
-from skimage import io
+from skimage import io, color
+from skimage.segmentation import felzenszwalb
+from collections import Counter
+
 
 CLICKS_DIR = ROOT_DIR / "clicks"   # hors de data/ pour être versionné
 
@@ -84,3 +88,25 @@ def get_clicks(image_path, n=10):
     CLICKS_DIR.mkdir(exist_ok=True)
     f.write_text(json.dumps(pts))
     return pts
+
+
+def make_hints_automatic(image_path, n=10):
+    img = io.imread(image_path)
+    img = color.rgb2gray(img)
+    segments = felzenszwalb(img, scale=100, sigma=0.5, min_size=50)
+
+    segments_sizes = Counter(segments.flatten())
+
+    points = []
+
+    for label in segments_sizes:
+        if label == 0: # label 0 pour le background
+            continue
+        elif len(points) == n:
+            break
+        points.append(np.mean(np.where(segments == label), axis=1))
+
+    points = [(int(x), int(y)) for x, y in points]
+
+
+    return points
