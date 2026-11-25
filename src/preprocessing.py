@@ -47,11 +47,11 @@ class PadToMultiple(transforms.Pad):
 
 
 class MyDataset(Dataset):
-    def __init__(self, image_paths, split="train", n_aug=0, clicks=None):
+    def __init__(self, image_paths, split="train", n_aug=0, click_user=None):
         self.image_paths = image_paths
         self.n_aug = n_aug
         self.split = split
-        self.clicks = clicks
+        self.click_user = click_user
 
         # NOTE: à revoir valeurs
 
@@ -120,29 +120,49 @@ class MyDataset(Dataset):
         img_A = img_LAB[1:2] # GROUND TRUTH
         img_B = img_LAB[2:3] # GROUND TRUTH
 
+        # """
+        # log-uniforme entre 0.01% et 1% des pixels à 1, le reste à 0
+        # - Train: un nouveau masque à chaque fois donc des données variées
+        # - Valid: le meme masque pour chaque image à toutes les epochs donc loss comparables
+        # - Test: même idée mais pour les métriques
+        # """
+        # log_min, log_max = -4, -2          # log10(1e-4), log10(1e-2)
+        # g = None if self.split == "train" else torch.Generator().manual_seed(index)
+        # # TEST: jouer avec
+        # # p = 10 ** torch.empty(1).uniform_(log_min, log_max, generator=g).item()
+        #
+        #
+        # p = 0.001 if self.split == "test" else 10 ** torch.empty(1).uniform_(log_min, log_max, generator=g).item()
+        # masque = (torch.rand(img_L.shape, generator=g) < p).float()
+
         """
-        log-uniforme entre 0.01% et 1% des pixels à 1, le reste à 0
-        - Train: un nouveau masque à chaque fois donc des données variées
-        - Valid: le meme masque pour chaque image à toutes les epochs donc loss comparables
-        - Test: même idée mais pour les métriques
+        Clics simulés, adapté de Zhang et al. 2017 (arXiv 1705.02999) :
+        - nombre de clics ~ géométrique(p), 0 inclus. Zhang: p = 1/8, soit ~7 clics par image entière.
+          Nous tirons par crop 256x256 et une image fait ~10 crops: p = 1/8 donnerait ~70 clics par image
+          contre ~10 pour un vrai utilisateur. On prend p = 1/4 (~3 par crop) pour couvrir la plage de test.
+        - position uniforme dans le crop (la gaussienne centrée de Zhang suppose l'image entière).
+        - chaque clic = carré 7x7 rempli de la couleur ab moyenne du carré, masque = 1 dessus
+          (identique à make_hints à l'inférence).
         """
-        log_min, log_max = -4, -2          # log10(1e-4), log10(1e-2)
+        n = torch.distributions.Geometric(probs=1/4).sample()
+
         g = None if self.split == "train" else torch.Generator().manual_seed(index)
-        # TEST: jouer avec
-        # p = 10 ** torch.empty(1).uniform_(log_min, log_max, generator=g).item()
-        # n = torch.distributions.Geometric(probs=1/8).sample()
-
-        p = 0.001 if self.split == "test" else 10 ** torch.empty(1).uniform_(log_min, log_max, generator=g).item()
-        masque = (torch.rand(img_L.shape, generator=g) < p).float()
-
-        a_hint = img_A * masque
-        b_hint = img_B * masque
 
         ab = torch.cat([img_A, img_B], dim=0)
-        if self.clicks is not None:                  # test : clics donnés
-            ab_hint, masque = make_hints(ab, self.clicks)
-        else:                                        # train / valid : tirage actuel (changera à l'étape 2)
-            ab_hint = ab * masque
+        if self.click_user is not None:                  # click du USER
+            ab_hint, masque = make_hints(ab, self.click_user) # FIX: à rajouter dans la classe Dataset
+        elif self.split == "test":
+            # ab_hint, masque = make_hints_automatic(ab)
+            pass
+        else:                                        # train / valid
+            _, H, W = img_L.shape
+
+            idx = torch.randperm(H * W, device=img_L.device)[:n]
+            ys = idx // W
+            xs = idx % W
+            points = torch.stack([ys, xs], dim=1)   # shape [n, 2]
+
+            ab_hint, masque = make_hints(ab, points)
 
         x = torch.cat([img_L, ab_hint, masque], dim=0)
 

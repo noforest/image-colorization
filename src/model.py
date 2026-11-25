@@ -63,7 +63,7 @@ class UNet(nn.Module):
 
         train_paths = np.asarray(sorted(C_TRAIN_PATH_IMAGES.iterdir()))
 
-        rng = np.random.default_rng(SEED)
+        rng = np.random.default_rng(SEED) # FIX: à enlever car seed général dans main()
         idx_shuffle = rng.permutation(len(train_paths))
         eighty = int(len(train_paths) * 0.8)
 
