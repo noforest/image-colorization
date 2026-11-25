@@ -3,7 +3,7 @@ import json
 import sys
 import numpy as np
 from pathlib import Path
-from .utils import ROOT_DIR
+from utils import ROOT_DIR
 import matplotlib.pyplot as plt
 from skimage import io, color
 from skimage.segmentation import felzenszwalb
@@ -93,7 +93,7 @@ def get_clicks(image_path, n=10):
 def make_hints_automatic(image_path, n=10):
     img = io.imread(image_path)
     img = color.rgb2gray(img)
-    segments = felzenszwalb(img, scale=100, sigma=0.5, min_size=50)
+    segments = felzenszwalb(img, scale=1000, sigma=7, min_size=100)
 
     segments_sizes = Counter(segments.flatten())
 

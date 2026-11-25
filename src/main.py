@@ -4,7 +4,7 @@ from pathlib import Path
 import argparse
 from model import UNet, MODEL_SAVE_PATH
 import torch
-from scripts.show_model import show_image
+from scripts.show_model import show_image, show_image_test
 import sys
 from utils import seed_everything
 from IPython import get_ipython
@@ -19,7 +19,7 @@ if __name__ == "__main__":
 
     if "ipykernel" in sys.modules:
         get_ipython().run_line_magic("matplotlib", "widget")   # fenêtre séparée pour que ginput reçoive les clics
-        args, _ = parser.parse_known_args(["--load-model", "data/model_weights/1_model20261117-1613.pt", "--image", "data/colored/test/0851x2.png"])  # TEST: tester image ici
+        args, _ = parser.parse_known_args(["--load-model", "data/model_weights/1_model20261117-1613.pt", "--image", "data/colored/test/0850x2.png"])  # TEST: tester image ici
     else:
         args, _ = parser.parse_known_args()
 
@@ -47,5 +47,6 @@ if __name__ == "__main__":
         if not image_path.is_absolute():
             image_path = ROOT_DIR / image_path
 
-        show_image(model, image_path, device)
+        # show_image(model, image_path, device)
+        show_image_test(model, image_path, device)
 # %%
