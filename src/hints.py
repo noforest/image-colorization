@@ -7,6 +7,7 @@ from utils import ROOT_DIR
 import matplotlib.pyplot as plt
 from skimage import io, color
 from skimage.segmentation import felzenszwalb
+from scipy import ndimage as ndi
 from collections import Counter
 import random
 
@@ -97,10 +98,9 @@ def auto_clicks(image_path, n=10, epsion=0.0, gaussian=False):
     Epsilon Greedy: avec facteur espilon, on choisis une point random de distribution uniforme
     Gaussian: si true les points random sont choisi d'une distribution gausienne, si false on suit une distribution uniforme
     """
-    img = io.imread(image_path)
-    img = color.rgb2gray(img)
-    H, W = img.shape
-    segments = felzenszwalb(img, scale=1000, sigma=7, min_size=100)
+    img = io.imread(image_path)[..., :3]     # segmentation EN COULEUR (en gris, bleu et beige de même luminosité se confondent)
+    H, W = img.shape[:2]
+    segments = felzenszwalb(img, scale=300, sigma=0.8, min_size=int(0.002 * H * W))
 
     segments_sizes = Counter(segments.flatten())
 
@@ -115,11 +115,11 @@ def auto_clicks(image_path, n=10, epsion=0.0, gaussian=False):
                 points.append(np.random.default_rng().multivariate_normal(mu, Sigma))
 
     for label, _ in segments_sizes.most_common():
-        # if label == 0: # label 0 pour le background
-        #     continue
         if len(points) == n:
             break
-        points.append(np.mean(np.where(segments == label), axis=1))
+        # point le plus loin du bord du segment
+        dist = ndi.distance_transform_edt(np.pad(segments == label, 1))[1:-1, 1:-1]   # pad : bord image = bord segment
+        points.append(np.unravel_index(dist.argmax(), dist.shape))
 
     points = [(int(x), int(y)) for x, y in points]
 

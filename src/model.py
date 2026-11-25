@@ -62,6 +62,7 @@ class UNet(nn.Module):
         down4, p4 = self.downconv4(p3)
 
         b = self.bottle_neck(p4)
+
         up4 = self.upconv4(b, down4)
         up3 = self.upconv3(up4, down3)
         up2 = self.upconv2(up3, down2)

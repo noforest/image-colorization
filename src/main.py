@@ -20,7 +20,8 @@ if __name__ == "__main__":
 
     if "ipykernel" in sys.modules:
         get_ipython().run_line_magic("matplotlib", "widget")   # fenêtre séparée pour que ginput reçoive les clics
-        args, _ = parser.parse_known_args(["--load-model", "data/model_weights/1_model20261117-1613.pt", "--image", "data/colored/test/0850x2.png"])  # TEST: tester image ici
+        # args, _ = parser.parse_known_args(["--load-model", "data/model_weights/1_model20261117-1613.pt", "--image", "data/colored/test/0850x2.png"])  # TEST: tester image ici
+        args, _ = parser.parse_known_args(["--image", "data/colored/test/0855x2.png", "--test"])  # TEST: tester image ici
     else:
         args, _ = parser.parse_known_args()
 
@@ -43,7 +44,7 @@ if __name__ == "__main__":
         else:
             sys.exit("Aucun .pt trouvé: relancer avec --retrain")
 
-    if args.test:
+    if args.image is None and args.test:
         results = model.test(device)
         show_metrics(results)
     #%%
