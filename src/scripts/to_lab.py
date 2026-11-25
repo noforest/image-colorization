@@ -1,4 +1,5 @@
 import torch
+import warnings
 from pathlib import Path
 import os 
 import subprocess
@@ -30,7 +31,10 @@ def convert_to_lab(image_path) -> NDArray[Any]:
 
 def convert_to_rgb(img_lab: NDArray[Any]):
     """ convertit lab en rgb """
-    lab_img = color.lab2rgb(img_lab)
+    # couleurs prédites hors gamut sRGB => lab2rgb les ramène dans [0, 1] et prévient à chaque image : on masque ce warning
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message="Conversion from CIE-LAB")
+        lab_img = color.lab2rgb(img_lab)
     return lab_img
 
 def save_lab(lab_img, filename, train=True):
