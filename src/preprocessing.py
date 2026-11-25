@@ -7,7 +7,7 @@ from skimage import io, color
 import numpy as np
 import math
 from pathlib import Path
-from hints import make_hints, make_hints_automatic
+from hints import make_hints, auto_clicks
 from utils import ROOT_DIR
 
 DATA_DIR = ROOT_DIR / "data"
@@ -139,7 +139,6 @@ class MyDataset(Dataset):
         indice. La géométrique tire directement un nombre de clics, 0 inclus,
         avec beaucoup de cas à peu de clics, ce qui correspond à un vrai
         utilisateur.
-
         """
 
         ab = torch.cat([img_A, img_B], dim=0)
@@ -148,22 +147,23 @@ class MyDataset(Dataset):
         if self.click_user is not None:              # clics de l'utilisateur
             points = self.click_user
         elif self.split == "test":
-            # clics "intelligents" sur l'image entière (segmentation, cf. hints.py).
-            # Le pad de test n'ajoute des pixels qu'à droite / en bas : les coordonnées restent valides.
-            points = make_hints_automatic(self.image_paths[real_index], n=self.n_clicks)
+            points = auto_clicks(self.image_paths[real_index], n=self.n_clicks)
         else:
             # train : nouveaux clics à chaque fois & valid : graine fixe => val loss comparable
             g = None if self.split == "train" else torch.Generator().manual_seed(index)
-            # tire n ~ géométrique(p) : P(n = k) = (1 - p)^k * p, k = 0, 1, 2, ...
-            # (= nb de "face" avant le 1er "pile" d'une pièce qui fait pile avec proba p)
 
-            # on veut n >= k  <=>  1 - u <= (1 - p)^k   ( v = 1-u et P(v ≤ x) = x car v uniforme )
-            # d'où P(1 - u <= (1-p)^k) = (1-p)^k = P(n >= k), la bonne loi
-            # on passe au log :  log(1 - u) <= k * log(1 - p)
-            #                <=> k <= log(1 - u) / log(1 - p)   (log(1 - p) < 0 : le sens s'inverse)
-            # n = plus grand entier k qui vérifie ça = partie entière de log(1 - u) / log(1 - p)
-            # 1 - u plutôt que u : u peut valoir 0 et log(0) = -inf
-            # (torch.distributions n'accepte pas de générateur => valid non reproductible)
+            """
+            tire n ~ géométrique(p) : P(n = k) = (1 - p)^k * p, k = 0, 1, 2, ...
+            (= nb de "face" avant le 1er "pile" d'une pièce qui fait pile avec proba p)
+
+            on veut n >= k  <=>  1 - u <= (1 - p)^k   ( v = 1-u et P(v ≤ x) = x car v uniforme )
+            d'où P(1 - u <= (1-p)^k) = (1-p)^k = P(n >= k), la bonne loi
+            on passe au log :  log(1 - u) <= k * log(1 - p)
+                           <=> k <= log(1 - u) / log(1 - p)   (log(1 - p) < 0 : le sens s'inverse)
+            n = plus grand entier k qui vérifie ça = partie entière de log(1 - u) / log(1 - p)
+            1 - u plutôt que u : u peut valoir 0 et log(0) = -inf
+            (torch.distributions n'accepte pas de générateur => valid non reproductible)
+            """
             u = torch.rand(1, generator=g).item()
             n = int(math.log(1 - u) / math.log(1 - self.p_geom))
             idx = torch.randperm(H * W, generator=g)[:n]   # n positions distinctes, uniformes dans le crop

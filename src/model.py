@@ -70,7 +70,7 @@ class UNet(nn.Module):
         valid_paths = train_paths[idx_shuffle][eighty:]
         train_paths = train_paths[idx_shuffle][:eighty]
 
-        train_dataset = MyDataset(train_paths, split="train", n_aug=1)
+        train_dataset = MyDataset(train_paths, split="train", n_aug=1, p_geom=1/4)
         valid_dataset = MyDataset(valid_paths, split="valid", n_aug=0)
 
         train_dataloader = DataLoader(dataset=train_dataset,

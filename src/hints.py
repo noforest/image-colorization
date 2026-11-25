@@ -90,7 +90,8 @@ def get_clicks(image_path, n=10):
     return pts
 
 
-def make_hints_automatic(image_path, n=10):
+def auto_clicks(image_path, n=10):
+    """Renvoie [(y, x), ...] : le centre des n plus grands segments Felzenszwalb de l'image."""
     img = io.imread(image_path)
     img = color.rgb2gray(img)
     segments = felzenszwalb(img, scale=1000, sigma=7, min_size=100)
