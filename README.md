@@ -164,3 +164,14 @@ class UpConv(nn.Module):
         x = torch.cat([x1, x2], 1) # NOTE : /!\ on colle la conv du down par la droite, vaut-il mieux que ce soit par la gauche ??
         return self.conv(x)
 ```
+
+
+
+
+Le principe
+
+1. Découper l'image en superpixels avec skimage.segmentation.slic. On obtient quelques centaines de petites zones de couleur homogène.
+2. Construire le RAG avec rag_mean_color : chaque superpixel devient un nœud, deux superpixels voisins sont reliés par une arête, et le poids de l'arête est la différence entre leurs couleurs moyennes.
+3. Fusionner les régions semblables, avec cut_threshold (on coupe les arêtes au-dessus d'un seuil) ou merge_hierarchical. On obtient quelques grandes régions de couleur homogène.
+4. Placer un clic par région, avec la couleur (a, b) moyenne du patch autour du point.
+
