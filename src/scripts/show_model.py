@@ -38,7 +38,7 @@ def show_image(model, image_path, device):
     if clicks is None:
         print("Place les clics sur la figure, puis relance cette cellule (supprimer le JSON dans clicks/ pour refaire).")
         return
-    x, _ = MyDataset([image_path], split="test", clicks=clicks)[0]   # [0] important ==> permet d'executer le __getitem__(index) où index vaut donc ici 0
+    x, _ = MyDataset([image_path], split="test", click_user=clicks)[0]   # [0] important ==> permet d'executer le __getitem__(index) où index vaut donc ici 0
 
     img_L = x[0:1]                      # à garder pour le concat plus tard
     x_wo_mask = x[:-1]
