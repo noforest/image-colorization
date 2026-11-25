@@ -3,11 +3,12 @@ import json
 import sys
 import numpy as np
 from pathlib import Path
-from utils import ROOT_DIR
+from .utils import ROOT_DIR
 import matplotlib.pyplot as plt
 from skimage import io, color
 from skimage.segmentation import felzenszwalb
 from collections import Counter
+import random
 
 
 CLICKS_DIR = ROOT_DIR / "clicks"   # hors de data/ pour être versionné
@@ -90,15 +91,28 @@ def get_clicks(image_path, n=10):
     return pts
 
 
-def auto_clicks(image_path, n=10):
-    """Renvoie [(y, x), ...] : le centre des n plus grands segments Felzenszwalb de l'image."""
+def auto_clicks(image_path, n=10, epsion=0.0, gaussian=False):
+    """
+    Renvoie [(y, x), ...] : le centre des n plus grands segments Felzenszwalb de l'image.
+    Epsilon Greedy: avec facteur espilon, on choisis une point random de distribution uniforme
+    Gaussian: si true les points random sont choisi d'une distribution gausienne, si false on suit une distribution uniforme
+    """
     img = io.imread(image_path)
     img = color.rgb2gray(img)
+    H, W = img.shape
     segments = felzenszwalb(img, scale=1000, sigma=7, min_size=100)
 
     segments_sizes = Counter(segments.flatten())
 
     points = []
+    for _ in range(n):
+        if random.random() < epsion:
+            if not gaussian:
+                points.append((random.randint(0, H), random.randint(0, W)))
+            else:
+                mu = 1/2 * np.array([H, W])
+                Sigma = np.array([[(H/4)**2 , 0], [0, (W/4)**2]])
+                points.append(np.random.default_rng().multivariate_normal(mu, Sigma))
 
     for label, _ in segments_sizes.most_common():
         if label == 0: # label 0 pour le background
