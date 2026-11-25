@@ -79,7 +79,7 @@ def show_metrics(history):
                        "distance perçue par un réseau (AlexNet), proche de l'oeil humain"}
 
     fig, axes = plt.subplots(2, 2, figsize=(12, 8))
-    ax = dict(zip(titles, axes.flat))   # 2x2 -> {"loss": ax, "psnr": ax, ...}
+    ax = dict(zip(titles, axes.flat))
 
     if "train_loss" in history:         # ---- fit() : courbes
         epochs = range(1, len(history["train_loss"]) + 1)
