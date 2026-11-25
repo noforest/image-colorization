@@ -71,7 +71,7 @@ class UNet(nn.Module):
     def fit(self, device="cuda" if torch.cuda.is_available() else "cpu", patience=3):
         LEARNING_RATE = 3e-4
         BATCH_SIZE = 32
-        EPOCHS = 30
+        EPOCHS = 50
         MODEL_SAVE_PATH.mkdir(exist_ok=True)
 
         train_paths = np.asarray(sorted(C_TRAIN_PATH_IMAGES.iterdir()))
