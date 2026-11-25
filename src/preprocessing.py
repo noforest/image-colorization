@@ -22,8 +22,8 @@ def denormalize_test_image(img_tensor: torch.Tensor, shape_original) -> torch.Te
     L  = (lab[0:1] + 1.0) * 50.0  # [0,100] <- [-1,1]
     ab = lab[1:3] * 110.0
 
-    - img_tensor est, au départ, "arrondie" au multiple de 8 supérieur ==> on va crop ce
-    qui a été "arrondie/ajouté" par PadToMultiple(8)
+    - img_tensor est, au départ, "arrondie" au multiple de 16 supérieur ==> on va crop ce
+    qui a été "arrondie/ajouté" par PadToMultiple(16)
     - shape_original est tirée d'un NDArray donc de la forme (H, W, ..)
     """
 
@@ -116,7 +116,7 @@ class MyDataset(Dataset):
 
         else:
             self.base_transform = transforms.Compose([
-                PadToMultiple(8),
+                PadToMultiple(16),      # 16 = 2^4 : le UNet divise H et W par 2 à chacun de ses 4 MaxPool
                 normalize,
                 ])
 
