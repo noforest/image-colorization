@@ -86,9 +86,19 @@ couleur moyenne) et agrandir le champ réceptif (cf. TODO, étapes 2 et 3).
 |---|---|---|---|---|
 | `1_model20261117-1613.pt` | `50b473b` | masque 1 %, `n_aug=0` | 12/15 | 0.0524 |
 | `model20261117-2301.pt` | `1697c79` | densité log-uniforme 0,01 %-1 %, `n_aug=1` | 9/12 | 0.0889 |
+| `model20261125-1607.pt` | `e6dc0ba` | clics simulés : nombre ~ géométrique(p=1/4, 0 inclus), carrés 7×7 de couleur moyenne, `n_aug=1` | 26/29 | 0.0811 |
 
-Communs : AdamW lr 3e-4, batch 32, patience 3, L1, crop 256, split seed 42.
-Les deux val loss ne sont pas comparables (densités d'indices différentes).
+Communs : AdamW lr 3e-4, patience 3, L1, crop 256, split seed 42.
+Batch 32 pour `1613` et `2301`, batch 16 pour `1607`.
+Les val loss ne sont pas comparables entre elles (indices simulés différents).
+
+- `1607` : **UNet à 4 niveaux (4 MaxPool)** au lieu de 3, soit un champ
+  réceptif plus grand (~200 px au lieu de ~100) ; 124 Mo au lieu de 31 Mo.
+  En test, les images doivent être paddées à un multiple de 16 (2⁴) au lieu
+  de 8 : `PadToMultiple(16)`. Ces poids ne se chargent pas dans l'ancien UNet
+  à 3 niveaux, et inversement.
+  Valid à la meilleure epoch (≈ 26-29) : PSNR ≈ 21,3 dB, SSIM ≈ 0,92,
+  LPIPS ≈ 0,18 (métriques en RGB, sur les crops 256 de validation).
 
 - `1613` paraît meilleur car testé dans ses conditions d'entraînement (1 % =
   ~6900 points sur 678×1020, irréaliste pour un utilisateur) ; à 0,01 % il
