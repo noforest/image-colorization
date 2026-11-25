@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from skimage import io, color
 from skimage.segmentation import felzenszwalb
 from collections import Counter
+import random
 
 
 CLICKS_DIR = ROOT_DIR / "clicks"   # hors de data/ pour être versionné
@@ -90,15 +91,23 @@ def get_clicks(image_path, n=10):
     return pts
 
 
-def auto_clicks(image_path, n=10):
-    """Renvoie [(y, x), ...] : le centre des n plus grands segments Felzenszwalb de l'image."""
+def auto_clicks(image_path, n=10, epsion=0.0):
+    """
+    Renvoie [(y, x), ...] : le centre des n plus grands segments Felzenszwalb de l'image.
+    Epsilon Greedy: avec facteur espilon, on choisis une point random de distribution uniforme
+    Question si on veut choisir une distribution gaussienne
+    """
     img = io.imread(image_path)
     img = color.rgb2gray(img)
+    H, W = img.shape
     segments = felzenszwalb(img, scale=1000, sigma=7, min_size=100)
 
     segments_sizes = Counter(segments.flatten())
 
     points = []
+    for _ in range(n):
+        if random.random() < epsion:
+            points.append((random.randint(0, H), random.randint(0, W)))
 
     for label, _ in segments_sizes.most_common():
         if label == 0: # label 0 pour le background
