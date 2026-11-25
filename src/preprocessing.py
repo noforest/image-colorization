@@ -142,9 +142,6 @@ class MyDataset(Dataset):
 
         """
 
-        # NOTE: A BIEN RELIRE et comprendre ar pas eu le temps
-        # pourquoi pas juste la fonction distribution geometric de torch
-
         ab = torch.cat([img_A, img_B], dim=0)
         _, H, W = img_L.shape
 
@@ -155,9 +152,17 @@ class MyDataset(Dataset):
             # Le pad de test n'ajoute des pixels qu'à droite / en bas : les coordonnées restent valides.
             points = make_hints_automatic(self.image_paths[real_index], n=self.n_clicks)
         else:
-            # train : nouveaux clics à chaque fois ; valid : graine fixe => val loss comparable
+            # train : nouveaux clics à chaque fois & valid : graine fixe => val loss comparable
             g = None if self.split == "train" else torch.Generator().manual_seed(index)
-            # nombre ~ géométrique(p) par inversion de la CDF : P(n >= k) = (1 - p)^k
+            # tire n ~ géométrique(p) : P(n = k) = (1 - p)^k * p, k = 0, 1, 2, ...
+            # (= nb de "face" avant le 1er "pile" d'une pièce qui fait pile avec proba p)
+
+            # on veut n >= k  <=>  1 - u <= (1 - p)^k   ( v = 1-u et P(v ≤ x) = x car v uniforme )
+            # d'où P(1 - u <= (1-p)^k) = (1-p)^k = P(n >= k), la bonne loi
+            # on passe au log :  log(1 - u) <= k * log(1 - p)
+            #                <=> k <= log(1 - u) / log(1 - p)   (log(1 - p) < 0 : le sens s'inverse)
+            # n = plus grand entier k qui vérifie ça = partie entière de log(1 - u) / log(1 - p)
+            # 1 - u plutôt que u : u peut valoir 0 et log(0) = -inf
             # (torch.distributions n'accepte pas de générateur => valid non reproductible)
             u = torch.rand(1, generator=g).item()
             n = int(math.log(1 - u) / math.log(1 - self.p_geom))
@@ -170,12 +175,3 @@ class MyDataset(Dataset):
 
         return x, torch.cat([img_A, img_B], dim=0)
 
-
-
-
-
-# train_dataset = MyDataset(os.lsdir(C_TRAIN_PATH_IMAGES))
-# # valid_dataset = MyDataset(all_valid)
-#
-# train_loader = DataLoader(train_dataset, shuffle=True, batch_size=32)
-# valid_loader = DataLoader(valid_dataset, shuffle=False, batch_size=32)
