@@ -3,7 +3,7 @@ import json
 import sys
 import numpy as np
 from pathlib import Path
-from utils import ROOT_DIR
+from .utils import ROOT_DIR
 import matplotlib.pyplot as plt
 from skimage import io, color
 from skimage.segmentation import felzenszwalb
@@ -91,11 +91,11 @@ def get_clicks(image_path, n=10):
     return pts
 
 
-def auto_clicks(image_path, n=10, epsion=0.0):
+def auto_clicks(image_path, n=10, epsion=0.0, gaussian=False):
     """
     Renvoie [(y, x), ...] : le centre des n plus grands segments Felzenszwalb de l'image.
     Epsilon Greedy: avec facteur espilon, on choisis une point random de distribution uniforme
-    Question si on veut choisir une distribution gaussienne
+    Gaussian: si true les points random sont choisi d'une distribution gausienne, si false on suit une distribution uniforme
     """
     img = io.imread(image_path)
     img = color.rgb2gray(img)
@@ -107,7 +107,12 @@ def auto_clicks(image_path, n=10, epsion=0.0):
     points = []
     for _ in range(n):
         if random.random() < epsion:
-            points.append((random.randint(0, H), random.randint(0, W)))
+            if not gaussian:
+                points.append((random.randint(0, H), random.randint(0, W)))
+            else:
+                mu = 1/2 * np.array([H, W])
+                Sigma = np.array([[(H/4)**2 , 0], [0, (W/4)**2]])
+                points.append(np.random.default_rng().multivariate_normal(mu, Sigma))
 
     for label, _ in segments_sizes.most_common():
         if label == 0: # label 0 pour le background
