@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torchvision.transforms.functional as F
 
 class DoubleConv(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -37,6 +38,11 @@ class UpConv(nn.Module):
         self.conv = DoubleConv(in_channels, out_channels)
 
     def forward(self, x1, x2):
-       x1 = self.up(x1)
-       x = torch.cat([x1, x2], 1) # NOTE : /!\ on colle la conv du down par la droite, vaut-il mieux que ce soit par la gauche ??
-       return self.conv(x)
+        x1 = self.up(x1)
+        diffY = x2.size()[2] - x1.size()[2]
+        diffX = x2.size()[3] - x1.size()[3]
+
+        x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2, diffY // 2, diffY - diffY // 2])
+
+        x = torch.cat([x1, x2], 1) # NOTE : /!\ on colle la conv du down par la droite, vaut-il mieux que ce soit par la gauche ??
+        return self.conv(x)

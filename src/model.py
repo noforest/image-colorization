@@ -30,9 +30,11 @@ class UNet(nn.Module):
         self.downconv1 = DownConv(in_channels, 64)
         self.downconv2 = DownConv(64, 128)
         self.downconv3 = DownConv(128, 256)
+        self.downconv4 = DownConv(256, 512)
 
-        self.bottle_neck = DoubleConv(256, 512)
+        self.bottle_neck = DoubleConv(512, 1024)
 
+        self.upconv4 = UpConv(1024, 512)
         self.upconv3 = UpConv(512, 256)
         self.upconv2 = UpConv(256, 128)
         self.upconv1 = UpConv(128, 64)
@@ -44,9 +46,11 @@ class UNet(nn.Module):
         down1, p1 = self.downconv1(x)
         down2, p2 = self.downconv2(p1)
         down3, p3 = self.downconv3(p2)
+        down4, p4 = self.downconv4(p3)
 
-        b = self.bottle_neck(p3)
-        up3 = self.upconv3(b, down3)
+        b = self.bottle_neck(p4)
+        up4 = self.upconv4(b, down4)
+        up3 = self.upconv3(up4, down3)
         up2 = self.upconv2(up3, down2)
         up1 = self.upconv1(up2, down1)
 
@@ -57,8 +61,8 @@ class UNet(nn.Module):
 
     def fit(self, device="cuda" if torch.cuda.is_available() else "cpu", patience=3):
         LEARNING_RATE = 3e-4
-        BATCH_SIZE = 32
-        EPOCHS = 30
+        BATCH_SIZE = 16
+        EPOCHS = 20
         MODEL_SAVE_PATH.mkdir(exist_ok=True)
 
         train_paths = np.asarray(sorted(C_TRAIN_PATH_IMAGES.iterdir()))
