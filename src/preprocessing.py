@@ -5,8 +5,9 @@ import torchvision.transforms as transforms
 import torchvision.transforms.functional as F
 from skimage import io, color
 import numpy as np
+import math
 from pathlib import Path
-from hints import make_hints, get_clicks
+from hints import make_hints, auto_clicks
 from utils import ROOT_DIR
 
 DATA_DIR = ROOT_DIR / "data"
@@ -14,6 +15,27 @@ C_TRAIN_PATH_IMAGES = DATA_DIR / "colored" / "train"
 C_TEST_PATH_IMAGES = DATA_DIR / "colored" / "test"
 SIZE_CROP = 256
 SIZE_CROP_ROT = 320
+
+def denormalize_test_image(img_tensor: torch.Tensor, shape_original) -> torch.Tensor:
+
+    """
+    L  = (lab[0:1] + 1.0) * 50.0  # [0,100] <- [-1,1]
+    ab = lab[1:3] * 110.0
+
+    - img_tensor est, au départ, "arrondie" au multiple de 8 supérieur ==> on va crop ce
+    qui a été "arrondie/ajouté" par PadToMultiple(8)
+    - shape_original est tirée d'un NDArray donc de la forme (H, W, ..)
+    """
+
+    h, w = img_tensor.shape[-2], img_tensor.shape[-1]   # shape de l'image selon un multiple m
+    pad_h, pad_w = h - shape_original[0], w - shape_original[1]
+    img_tensor = F.crop(img_tensor, 0, 0, h-pad_h, w-pad_w)
+
+    img_L = (img_tensor[0:1] + 1.0) * 50.0
+    img_ab = img_tensor[1:3] * 110.0
+
+    return torch.cat([img_L, img_ab], dim=0)
+
 
 class PadToMultiple(transforms.Pad):
     def __init__(self, m=8, fill=0, padding_mode="reflect"):
@@ -47,11 +69,13 @@ class PadToMultiple(transforms.Pad):
 
 
 class MyDataset(Dataset):
-    def __init__(self, image_paths, split="train", n_aug=0, clicks=None):
+    def __init__(self, image_paths, split="train", n_aug=0, click_user=None, n_clicks=10, p_geom=1/4):
         self.image_paths = image_paths
         self.n_aug = n_aug
         self.split = split
-        self.clicks = clicks
+        self.click_user = click_user  # clics de l'utilisateur [(y, x), ...] (inférence)
+        self.n_clicks = n_clicks      # test : nombre de clics simulés (métriques)
+        self.p_geom = p_geom          # train / valid : paramètre de la loi géométrique
 
         # NOTE: à revoir valeurs
 
@@ -61,8 +85,9 @@ class MyDataset(Dataset):
                 )
 
         """
-        L  = lab[0:1] / 50.0 - 1.0   # [0,100] -> [-1,1]
-        ab = lab[1:3] / 110.0        # ~[-1,1], 0 reste 0
+        Normalize fait (x - mean) / std sur chaque canal :
+        L  = (lab[0:1] - 50) / 50    # [0,100] -> [-1,1]   (= lab/50 - 1)
+        ab = (lab[1:3] - 0) / 110    # ~[-1,1], 0 reste 0
         mask unchanged
         """
 
@@ -120,37 +145,54 @@ class MyDataset(Dataset):
         img_B = img_LAB[2:3] # GROUND TRUTH
 
         """
-        log-uniforme entre 0.01% et 1% des pixels à 1, le reste à 0
-        - Train: un nouveau masque à chaque fois donc des données variées
-        - Valid: le meme masque pour chaque image à toutes les epochs donc loss comparables
-        - Test: même idée mais pour les métriques
-        """
-        log_min, log_max = -4, -2          # log10(1e-4), log10(1e-2)
-        g = None if self.split == "train" else torch.Generator().manual_seed(index)
-        # TEST: jouer avec
-        # p = 10 ** torch.empty(1).uniform_(log_min, log_max, generator=g).item()
-        p = 0.001 if self.split == "test" else 10 ** torch.empty(1).uniform_(log_min, log_max, generator=g).item()
-        masque = (torch.rand(img_L.shape, generator=g) < p).float()
+        Clics simulés, adapté de Zhang et al. 2017 (arXiv 1705.02999) :
+        - nombre de clics ~ géométrique(p), 0 inclus. Zhang: p = 1/8, soit ~7 clics par image entière.
+          Nous tirons par crop 256x256 et une image fait ~10 crops: p = 1/8 donnerait ~70 clics par image
+          contre ~10 pour un vrai utilisateur. On prend p = 1/4 (~3 par crop) pour couvrir la plage de test.
+        - position uniforme dans le crop (la gaussienne centrée de Zhang suppose l'image entière).
+        - chaque clic = carré 7x7 rempli de la couleur ab moyenne du carré, masque = 1 dessus
+          (identique à make_hints à l'inférence).
 
-        a_hint = img_A * masque
-        b_hint = img_B * masque
+        Avant: La log-uniforme tirait une densité de pixels isolés entre 0,01 %
+        et 1 %, soit au moins ~6 pixels par crop 256², et jamais 0. Elle ne
+        couvrait donc ni le cas réel (~1 clic par crop -- soit en ~10 clic sur 
+        l'image entière, et beaucoup de zones sans clic), ni la colorisation sans
+        indice. La géométrique tire directement un nombre de clics, 0 inclus,
+        avec beaucoup de cas à peu de clics, ce qui correspond à un vrai
+        utilisateur.
+        """
 
         ab = torch.cat([img_A, img_B], dim=0)
-        if self.clicks is not None:                  # test : clics donnés
-            ab_hint, masque = make_hints(ab, self.clicks)
-        else:                                        # train / valid : tirage actuel (changera à l'étape 2)
-            ab_hint = ab * masque
+        _, H, W = img_L.shape
+
+        if self.click_user is not None:              # clics de l'utilisateur
+            points = self.click_user
+        elif self.split == "test":
+            points = auto_clicks(self.image_paths[real_index], n=self.n_clicks)
+        else:
+            # train : nouveaux clics à chaque fois & valid : graine fixe => val loss comparable
+            g = None if self.split == "train" else torch.Generator().manual_seed(index)
+
+            """
+            tire n ~ géométrique(p) : P(n = k) = (1 - p)^k * p, k = 0, 1, 2, ...
+            (= nb de "face" avant le 1er "pile" d'une pièce qui fait pile avec proba p)
+
+            on veut n >= k  <=>  1 - u <= (1 - p)^k   ( v = 1-u et P(v ≤ x) = x car v uniforme )
+            d'où P(1 - u <= (1-p)^k) = (1-p)^k = P(n >= k), la bonne loi
+            on passe au log :  log(1 - u) <= k * log(1 - p)
+                           <=> k <= log(1 - u) / log(1 - p)   (log(1 - p) < 0 : le sens s'inverse)
+            n = plus grand entier k qui vérifie ça = partie entière de log(1 - u) / log(1 - p)
+            1 - u plutôt que u : u peut valoir 0 et log(0) = -inf
+            (torch.distributions n'accepte pas de générateur => valid non reproductible)
+            """
+            u = torch.rand(1, generator=g).item()
+            n = int(math.log(1 - u) / math.log(1 - self.p_geom))
+            idx = torch.randperm(H * W, generator=g)[:n]
+            points = torch.stack([idx // W, idx % W], dim=1).tolist()
+
+        ab_hint, masque = make_hints(ab, points)
 
         x = torch.cat([img_L, ab_hint, masque], dim=0)
 
         return x, torch.cat([img_A, img_B], dim=0)
 
-
-
-
-
-# train_dataset = MyDataset(os.lsdir(C_TRAIN_PATH_IMAGES))
-# # valid_dataset = MyDataset(all_valid)
-#
-# train_loader = DataLoader(train_dataset, shuffle=True, batch_size=32)
-# valid_loader = DataLoader(valid_dataset, shuffle=False, batch_size=32)

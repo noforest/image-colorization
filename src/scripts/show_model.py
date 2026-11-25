@@ -1,39 +1,25 @@
 import os
-from preprocessing import MyDataset
+from preprocessing import MyDataset, denormalize_test_image
 from scripts.to_lab import convert_to_rgb
 import torch
 from skimage import io
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 import torchvision.transforms.functional as F
 from hints import *
+from utils import add_copy_button
 
-def denormalize_test_image(img_tensor: torch.Tensor, shape_original) -> torch.Tensor:
-
-    """ 
-    L  = (lab[0:1] + 1.0) * 50.0  # [0,100] <- [-1,1]
-    ab = lab[1:3] * 110.0         
-    
-    - img_tensor est, au départ, "arrondie" au multiple de 8 supérieur ==> on va crop ce
-    qui a été "arrondie/ajouté" par PadToMultiple(8)
-    - shape_original est tirée d'un NDArray donc de la forme (H, W, ..)
-    """
-
-    h, w = img_tensor.shape[-2], img_tensor.shape[-1]   # shape de l'image selon un multiple m
-    pad_h, pad_w = h - shape_original[0], w - shape_original[1] 
-    img_tensor = F.crop(img_tensor, 0, 0, h-pad_h, w-pad_w)
-
-    img_L = (img_tensor[0:1] + 1.0) * 50.0
-    img_ab = img_tensor[1:3] * 110.0
-
-    return torch.cat([img_L, img_ab], dim=0)
-
-
-def show_image(model, image_path, device):
+def show_image(model, image_path, device, test=False, show_hints=False):
 
     img_rgb = io.imread(image_path)
 
     # 1. Construction entrée sur cpu    (/!\ on peut pas convertir en numpy quand tenseur sur GPU)
-    x, _ = MyDataset([image_path], split="test", clicks=get_clicks(image_path))[0]   # [0] important ==> permet d'executer le __getitem__(index) où index vaut donc ici 0
+
+    clicks = auto_clicks(image_path) if test else get_clicks(image_path)
+    if clicks is None:
+        print("Place les clics sur la figure, puis relance cette cellule (supprimer le JSON dans clicks/ pour refaire).")
+        return
+    x, _ = MyDataset([image_path], split="test", click_user=clicks)[0]   # [0] important ==> permet d'executer le __getitem__(index) où index vaut donc ici 0
 
     img_L = x[0:1]                      # à garder pour le concat plus tard
     x_wo_mask = x[:-1]
@@ -53,22 +39,72 @@ def show_image(model, image_path, device):
     img_pred_rgb = convert_to_rgb(img_pred)
 
     # 4. Tracer les 3 figures
-    fig, axes = plt.subplots(1, 3, figsize=(20, 5))
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4))
     titles = [
         f"Image d'origine {img_rgb.shape[:-1]}",
-        f"Entrée avec qlq points de couleurs de l'image d'origine {x_wo_mask_rgb.shape[:-1]}",
+        f"Entrée avec qlq points de couleurs {x_wo_mask_rgb.shape[:-1]}",
         f"Image prédite colorisée {img_pred_rgb.shape[:-1]}",
     ]
     images = [img_rgb, x_wo_mask_rgb, img_pred_rgb]
 
     for i in range(len(axes)):
         axes[i].imshow(images[i])
-        axes[i].set_title(titles[i])
+        axes[i].set_title(titles[i], fontsize=9)
         axes[i].axis("off")
-        # axes[i].tight_layout()
+
+        if i == 2 and show_hints:
+            ys, xs = zip(*clicks)
+            axes[i].plot(xs, ys, "r+", ms=12, mew=2)
 
     plt.suptitle(os.path.basename(image_path))
+    fig.tight_layout()
+
     plt.show()
+    add_copy_button(fig)
 
 
+def show_metrics(history):
+    """
+    - history de fit()  : listes (1 valeur par epoch) => courbes, train & valid superposées pour la loss
+    - results de test() : {"test_loss": .., "psnr": .., ...} => une barre par métrique avec sa valeur
+    Chaque subplot a sa propre échelle (sinon PSNR ~25 écraserait SSIM ~0.9).
+    """
+    # titre + 1 ligne d'explication (affichée sur chaque plot)
+    titles = {"loss":  "L1 loss (lower is better)",
+              "psnr":  "PSNR en dB (higher is better)\n"
+                       "fidélité pixel à pixel (basé sur MSE)",
+              "ssim":  "SSIM (higher is better, max 1)\n"
+                       "similarité de structure : contrastes, textures, contours",
+              "lpips": "LPIPS (lower is better, 0 = identique)\n"
+                       "distance perçue par un réseau (AlexNet), proche de l'oeil humain"}
 
+    fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+    ax = dict(zip(titles, axes.flat))
+
+    if "train_loss" in history:         # ---- fit() : courbes
+        epochs = range(1, len(history["train_loss"]) + 1)
+        ax["loss"].plot(epochs, history["train_loss"], marker="o", label="train")
+        ax["loss"].plot(epochs, history["val_loss"], marker="o", label="valid")
+        ax["loss"].legend()
+        for k in ("psnr", "ssim", "lpips"):
+            ax[k].plot(epochs, history[f"val_{k}"], marker="o", label="valid")
+        for a in ax.values():
+            a.set_xlabel("epoch")
+            a.xaxis.set_major_locator(MaxNLocator(integer=True))   # epochs entières (pas 1.25, 1.5...)
+        fig.suptitle("Courbes d'entraînement")
+
+    else:                               # ---- test() : une barre par métrique
+        for k, a in ax.items():
+            key = "test_loss" if k == "loss" else k
+            bars = a.bar(["modèle"], [history[key]], width=0.4)
+            a.bar_label(bars, fmt="%.3f")
+            a.margins(y=0.15)           # place pour l'étiquette au-dessus de la barre
+        fig.suptitle("Métriques de test")
+
+    for k, a in ax.items():
+        a.set_title(titles[k], fontsize=10)
+        a.grid(alpha=0.3)
+
+    fig.tight_layout()
+    plt.show()
+    add_copy_button(fig)
